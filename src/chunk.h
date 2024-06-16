@@ -5,9 +5,11 @@
 #include <stdint.h>
 
 #define INCREASE_CAPACITY(capacity) ((capacity) < 16 ? 16 : (capacity) * 2)
-#define INCREASE_ARRAY(type, pointer, old_capacity, new_capacity)              \
-    (type *)reallocate(pointer, sizeof(type) * (old_capacity),                 \
+#define INCREASE_ARRAY(type, ptr, old_capacity, new_capacity)                  \
+    (type *)reallocate(ptr, sizeof(type) * (old_capacity),                     \
                        sizeof(type) * (new_capacity))
+#define FREE_ARRAY(type, ptr, old_capacity)                                    \
+    reallocate(ptr, sizeof(type) * (old_capacity), 0)
 
 typedef enum {
     OP_RETURN,
@@ -21,5 +23,6 @@ typedef struct {
 
 void init_chunk(Chunk *chunk);
 void wire_chunk(Chunk *chunk, uint8_t byte);
+void free_chunk(Chunk *chunk);
 
 #endif
