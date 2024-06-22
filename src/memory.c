@@ -7,11 +7,19 @@ void *reallocate(void *ptr, size_t old_size, size_t new_size) {
         free(ptr);
         return NULL;
     }
-    printf("hello");
     void *res = realloc(ptr, new_size);
     if (res == NULL) {
         printf("Unable to reallocate memory.");
         exit(1);
     }
     return res;
+}
+
+void* allocate(size_t size) {
+    void* ptr = malloc(size);
+    if(ptr == NULL) {
+        printf("Unable to allocate memory.");
+        exit(1);
+    }
+    return ptr;
 }

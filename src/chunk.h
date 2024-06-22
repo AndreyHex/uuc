@@ -4,13 +4,6 @@
 #include "memory.h"
 #include <stdint.h>
 
-#define INCREASE_CAPACITY(capacity) ((capacity) < 16 ? 16 : (capacity) * 2)
-#define INCREASE_ARRAY(type, ptr, old_capacity, new_capacity)                  \
-    (type *)reallocate(ptr, sizeof(type) * (old_capacity),                     \
-                       sizeof(type) * (new_capacity))
-#define FREE_ARRAY(type, ptr, old_capacity)                                    \
-    reallocate(ptr, sizeof(type) * (old_capacity), 0)
-
 typedef enum {
     OP_RETURN,
 } OpCode;
