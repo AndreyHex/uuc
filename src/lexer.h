@@ -1,6 +1,7 @@
 #ifndef lexer_h
 #define lexer_h
 
+#include "result.h"
 typedef enum {
     LEFT_PAREN,
     RIGHT_PAREN,
@@ -20,6 +21,7 @@ typedef enum {
     STAR,
     STAR_EQUAL,
     SLASH,
+    SLASH_SLASH,
     SLASH_EQUAL,
 
     BANG,
@@ -38,9 +40,11 @@ typedef enum {
     FALSE,
 
     AND,
-    AND_B,
+    AND_AND,
+    AND_EQUAL,
     OR,
-    OR_B,
+    OR_OR,
+    OR_EQUAL,
 
     CLASS,
     FN,
@@ -71,8 +75,16 @@ typedef struct {
     Token *tokens;
 } Tokens;
 
+typedef struct {
+    ResultType result;
+    int size;
+    TokenType type;
+} TokenResult;
+
 Tokens *scan(char *, int);
 char peek(char *, int, int);
+TokenResult check_simple(char, char);
 void add_token(Tokens *, Token);
+void free_tokens(Tokens*);
 
 #endif
