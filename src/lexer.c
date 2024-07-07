@@ -1,6 +1,7 @@
 #include "lexer.h"
 #include "memory.h"
 #include "result.h"
+#include <stdio.h>
 #include <stdlib.h>
 
 typedef struct {
@@ -28,6 +29,10 @@ Rule rules[] = {
     {';', SEMICOLON, 0, {}},
     {'.', DOT, 0, {}},
     {',', COMMA, 0, {}},
+    {'(', LEFT_PAREN, 0, {}},
+    {')', RIGHT_PAREN, 0, {}},
+    {'{', LEFT_BRACE, 0, {}},
+    {'}', RIGHT_BRACE, 0, {}},
 };
 
 int rules_size = sizeof(rules) / sizeof(Rule);
@@ -35,6 +40,7 @@ int rules_size = sizeof(rules) / sizeof(Rule);
 Tokens *scan(char *input, int size) {
     int i = 0;
     int line = 0;
+    int comment = 0;
 
     Tokens *tokens = allocate(sizeof(Tokens));
     tokens->tokens = ALLOC_ARRAY(Token);
@@ -43,6 +49,15 @@ Tokens *scan(char *input, int size) {
 
     while (i <= size) {
         char c = input[i];
+
+        if (c == '\n') line++;
+
+        if (comment) {
+            i++;
+            if (c == '\n') comment = 0;
+            continue;
+        }
+
         char n = peek(input, size, i);
         Token token;
         token.pos = i;
@@ -51,12 +66,34 @@ Tokens *scan(char *input, int size) {
         int l = 1;
         token.length = l;
 
-        TokenResult r = check_simple(c, n);
-        if (r.result == SOME) {
+        if (c == '"') {
+            i++; // skipping open "
+            TokenResult r = parse_string(input, size, i);
             token.type = r.type;
             add_token(tokens, token);
             i += r.size;
-        } else i++;
+            i++; // skipping closing "
+            continue;
+        }
+
+        TokenResult r = parse_simple(c, n);
+        if (r.result == SOME) {
+            token.type = r.type;
+            add_token(tokens, token);
+            if (r.type == SLASH_SLASH) comment = 1;
+            i += r.size;
+            continue;
+        } 
+
+        TokenResult identifier = parse_identifier(input, size, i);
+        if(identifier.result == SOME) {
+            token.type = identifier.type;
+            add_token(tokens, token);
+            i+= r.size;
+            continue;
+        }
+
+        i++;
     }
     return tokens;
 }
@@ -66,7 +103,35 @@ char peek(char *input, int size, int i) {
     return input[i + 1];
 }
 
-TokenResult check_simple(char c, char n) {
+TokenResult parse_string(char *input, int size, int index) {
+    TokenResult r;
+    r.result = SOME;
+    r.size = 0;
+    r.type = STRING;
+    char p = '"';
+    char c = input[index];
+    while ((c != '"' || p == '\\') && c != '\0' && c != EOF) {
+        r.size++;
+        p = c;
+        c = input[index + r.size];
+    }
+    return r;
+}
+
+TokenResult parse_identifier(char *input, int size, int index) {
+    TokenResult r;
+    r.result = NONE;
+    r.size = 0;
+
+    char c = input[index];
+    if(c == 'v') {
+    }
+
+
+    return r;
+}
+
+TokenResult parse_simple(char c, char n) {
     TokenResult r;
     r.result = NONE;
     r.size = 0;

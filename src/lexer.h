@@ -83,8 +83,10 @@ typedef struct {
 
 Tokens *scan(char *, int);
 char peek(char *, int, int);
-TokenResult check_simple(char, char);
+TokenResult parse_simple(char, char);
+TokenResult parse_string(char *, int, int);
+TokenResult parse_identifier(char *, int, int);
 void add_token(Tokens *, Token);
-void free_tokens(Tokens*);
+void free_tokens(Tokens *);
 
 #endif

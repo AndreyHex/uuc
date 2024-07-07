@@ -16,6 +16,9 @@ $(OBJ_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
+run: $(EXE_DIR)/uuc
+	$(EXE_DIR)/uuc
+
 .PHONY: clean
 
 clean:
