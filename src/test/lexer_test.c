@@ -1,5 +1,5 @@
 #include "uuc_test.h"
-#include "../lexer.h"
+#include "../include/lexer.h"
 #include <string.h>
 #include <stdio.h>
 

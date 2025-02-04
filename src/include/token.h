@@ -1,7 +1,5 @@
-#ifndef lexer_h
-#define lexer_h
-
-#include "result.h"
+#ifndef uuc_token_h
+#define uuc_token_h
 
 typedef enum {
     LEFT_PAREN,
@@ -78,19 +76,6 @@ typedef struct {
     Token *tokens;
 } Tokens;
 
-typedef struct {
-    ResultType result;
-    int size;
-    TokenType type;
-} TokenResult;
-
-Tokens *scan(char *, int);
-char peek(char *, int, int);
-TokenResult parse_simple(char, char);
-TokenResult parse_string(char *, int, int);
-TokenResult parse_identifier(char *, int, int);
-void add_token(Tokens *, Token);
-void free_tokens(Tokens *);
 const char* token_name(TokenType token_type);
 
 #endif
