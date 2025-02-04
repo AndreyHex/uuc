@@ -3,6 +3,33 @@
 #include "result.h"
 #include <stdio.h>
 #include <stdlib.h>
+#include <strings.h>
+
+const char *TOKEN_NAMES[] = {
+    "LEFT_PAREN",  "RIGHT_PAREN", "LEFT_BRACE",  "RIGHT_BRACE",
+    "COMMA",       "DOT",         "SEMICOLON",   "COLON",
+
+    "PLUS",        "PLUS_PLUS",   "PLUS_EQUAL",  "MINUS",
+    "MINUS_MINUS", "MINUS_EQUAL", "STAR",        "STAR_EQUAL",
+    "SLASH",       "SLASH_SLASH", "SLASH_EQUAL",
+
+    "BANG",        "BANG_EQUAL",  "EQUAL",       "EQUAL_EQUAL",
+    "LESS",        "LESS_EQUAL",  "GREATER",     "GREATER_EQUAL",
+
+    "IDENTIFIER",  "STRING",      "NUMBER",      "TRUE",
+    "FALSE",
+
+    "AND",         "AND_AND",     "AND_EQUAL",   "OR",
+    "OR_OR",       "OR_EQUAL",
+
+    "CLASS",       "FN",          "RETURN",      "VAR",
+    "THIS",        "SUPER",
+
+    "FOR",         "WHILE",       "IF",          "ELSE",
+
+    "EOF",
+
+};
 
 typedef struct {
     char character;
@@ -37,6 +64,15 @@ Rule rules[] = {
 
 int rules_size = sizeof(rules) / sizeof(Rule);
 
+TokenResult parse_number(char *input, int size, int index);
+TokenResult parse_something(char *input, int size, int index, char *rest, TokenType candidate);
+TokenResult parse_identifier(char *input, int size, int index);
+
+int is_letter(char c);
+int is_digit(char c);
+int is_whitespace(char c);
+int is_whitespace_no_new_line(char c);
+
 Tokens *scan(char *input, int size) {
     int i = 0;
     int line = 0;
@@ -47,14 +83,24 @@ Tokens *scan(char *input, int size) {
     tokens->capacity = 16;
     tokens->count = 0;
 
-    while (i <= size) {
+    while (i < size) {
         char c = input[i];
-
-        if (c == '\n') line++;
+        if (is_whitespace_no_new_line(c)) {
+            i++;
+            continue;
+        }
 
         if (comment) {
             i++;
-            if (c == '\n') comment = 0;
+            if (c == '\n') {
+                comment = 0;
+                line++;
+            }
+            continue;
+        }
+        if (c == '\n') {
+            i++;
+            line++;
             continue;
         }
 
@@ -83,13 +129,54 @@ Tokens *scan(char *input, int size) {
             if (r.type == SLASH_SLASH) comment = 1;
             i += r.size;
             continue;
-        } 
+        }
 
-        TokenResult identifier = parse_identifier(input, size, i);
-        if(identifier.result == SOME) {
-            token.type = identifier.type;
+        if(is_digit(c)) {
+            printf("parsing number\n");
+            TokenResult nr = parse_number(input, size, i);
+            if(nr.result == SOME) {
+                token.type = nr.type;
+                add_token(tokens, token);
+                i += nr.size;
+                continue;
+            }
+        }
+
+        TokenResult rr = {0};
+        switch (c) {
+            case 'v': rr = parse_something(input, size, i, "var", VAR); break;
+            case 't': { 
+                char p = peek(input, size, i);
+                switch(p) {
+                    case 'r': rr = parse_something(input, size, i, "true", TRUE); break;
+                    case 'h': rr = parse_something(input, size, i, "this", THIS); break;
+                    default: rr = parse_identifier(input, size, i);
+                }
+                break; 
+            }
+            case 'f': {
+                char p = peek(input, size, i);
+                switch(p) {
+                    case 'n': rr = parse_something(input, size, i, "fn", FN); break;
+                    case 'a': rr = parse_something(input, size, i, "false", FALSE); break;
+                    case 'o': rr = parse_something(input, size, i, "for", FOR); break;
+                    default: rr = parse_identifier(input, size, i);
+                };
+                break;
+            }
+            case 'i': rr = parse_something(input, size, i, "if", IF); break;
+            case 'e': rr = parse_something(input, size, i, "else", ELSE); break;
+            case 'w': rr = parse_something(input, size, i, "while", WHILE); break;
+            case 'n': rr = parse_something(input, size, i, "null", UUC_NULL); break;
+            case 's': rr = parse_something(input, size, i, "super", SUPER); break;
+            case 'c': rr = parse_something(input, size, i, "class", CLASS); break;
+            case 'r': rr = parse_something(input, size, i, "return", RETURN); break;
+            default: rr = parse_identifier(input, size, i);
+        }
+        if (rr.result == SOME) {
+            token.type = rr.type;
             add_token(tokens, token);
-            i+= r.size;
+            i += rr.size;
             continue;
         }
 
@@ -104,10 +191,7 @@ char peek(char *input, int size, int i) {
 }
 
 TokenResult parse_string(char *input, int size, int index) {
-    TokenResult r;
-    r.result = SOME;
-    r.size = 0;
-    r.type = STRING;
+    TokenResult r = {.result = SOME, .size = 0, .type = STRING};
     char p = '"';
     char c = input[index];
     while ((c != '"' || p == '\\') && c != '\0' && c != EOF) {
@@ -118,17 +202,65 @@ TokenResult parse_string(char *input, int size, int index) {
     return r;
 }
 
-TokenResult parse_identifier(char *input, int size, int index) {
-    TokenResult r;
-    r.result = NONE;
-    r.size = 0;
-
-    char c = input[index];
-    if(c == 'v') {
+TokenResult parse_number(char *input, int size, int index) {
+    int i = 0;
+    while(index + i < size && is_digit(input[index + i])) i++;
+    if(index + i < size && input[index + i] == '.' && is_digit(peek(input, size, index + i))) {
+        i++; // skip dot
+        while(index + i < size && is_digit(input[index + i])) i++;
     }
-
-
+    TokenResult r = { SOME, i, NUMBER };
     return r;
+}
+
+TokenResult parse_something(char *input, int size, int index, char *name, TokenType candidate) {
+    int i = 0;
+    char r = name[i];
+    while( index + i < size && r != '\0' ) {
+        if( r != input[index + i] ) return parse_identifier(input, size, index);
+        i ++;
+        r = name[i];
+    }
+    if( r != '\0' ) return parse_identifier(input, size, index);
+    char next_after = peek(input, size, index + i - 1);
+    // check if next is valid identifier character
+    if(is_digit(next_after) || is_letter(next_after) || next_after == '_') {
+        return parse_identifier(input, size, index);
+    }
+    TokenResult rr = { SOME, i, candidate };
+    return rr;
+}
+
+TokenResult parse_identifier(char *input, int size, int index) {
+    TokenResult r = {NONE, 0, IDENTIFIER};
+    int i = index;
+    char c = input[index];
+    if (c == '_' || is_letter(c) || is_digit(c)) {
+        r.result = SOME;
+        i++;
+        c = input[i];
+    }
+    while ((is_letter(c) || is_digit(c) || c == '_') && i < size) {
+        i++;
+        c = input[i];
+    }
+    r.size = i - index;
+    return r;
+}
+
+int is_letter(char c) {
+    return (c >= 'a' && c <= 'z') || (c >= 'A' && c <= 'Z');
+}
+
+int is_digit(char c) { return c >= '0' && c <= '9'; }
+
+int is_whitespace(char c) {
+    return c == ' ' || c == '\n' || c == '\t' || c == '\r' || c == '\0' ||
+           c == EOF;
+}
+
+int is_whitespace_no_new_line(char c) {
+    return c == ' '|| c == '\t' || c == '\r' || c == '\0' || c == EOF;
 }
 
 TokenResult parse_simple(char c, char n) {
@@ -155,6 +287,8 @@ TokenResult parse_simple(char c, char n) {
     }
     return r;
 }
+
+const char *token_name(TokenType token_type) { return TOKEN_NAMES[token_type]; }
 
 void add_token(Tokens *tokens, Token token) {
     if (tokens->count == tokens->capacity - 1) {

@@ -2,6 +2,7 @@
 #define lexer_h
 
 #include "result.h"
+
 typedef enum {
     LEFT_PAREN,
     RIGHT_PAREN,
@@ -58,6 +59,8 @@ typedef enum {
     IF,
     ELSE,
 
+    UUC_NULL,
+
     EOF,
 } TokenType;
 
@@ -88,5 +91,6 @@ TokenResult parse_string(char *, int, int);
 TokenResult parse_identifier(char *, int, int);
 void add_token(Tokens *, Token);
 void free_tokens(Tokens *);
+const char* token_name(TokenType token_type);
 
 #endif
