@@ -59,7 +59,8 @@ typedef enum {
 
     UUC_NULL,
 
-    EOF,
+    TOKEN_EOF,
+    TOKEN_ERROR,
 } TokenType;
 
 typedef struct {

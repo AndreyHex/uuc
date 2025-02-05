@@ -38,187 +38,221 @@ Rule rules[] = {
 
 int rules_size = sizeof(rules) / sizeof(Rule);
 
-TokenResult parse_number(char *input, int size, int index);
-TokenResult parse_something(char *input, int size, int index, char *rest, TokenType candidate);
-TokenResult parse_identifier(char *input, int size, int index);
+TokenResult parse_simple(LexerContext *ctx);
+TokenResult parse_string(LexerContext *ctx);
+TokenResult parse_number(LexerContext *ctx);
+TokenResult parse_something(LexerContext *ctx, char *rest, TokenType candidate);
+TokenResult parse_identifier(LexerContext *ctx, int parsed);
+
+Token create_token(LexerContext *ctx, TokenType type, int size);
+Token create_end(LexerContext *ctx);
+
+char lexer_peek(LexerContext *ctx);
+char lexer_peek_next(LexerContext *ctx);
+
+int is_end(LexerContext *ctx);
 
 int is_letter(char c);
 int is_digit(char c);
 int is_whitespace(char c);
 int is_whitespace_no_new_line(char c);
 
-Tokens *scan(char *input, int size) {
-    int i = 0;
-    int line = 0;
-    int comment = 0;
+Token next_token(LexerContext *ctx) {
+    char c = lexer_peek(ctx);
 
+    if(is_end(ctx)) {
+        return create_end(ctx);
+    }
+
+    while(is_whitespace(c) || ctx->in_comment) {
+        if(is_end(ctx)) return create_end(ctx);
+        if(c == '\n') {
+            ctx->line++;
+            if(ctx->in_comment) ctx->in_comment = 0;
+        }
+        ctx->cursor++;
+        c = lexer_peek(ctx);
+    }
+
+    if (c == '"') {
+        TokenResult res = parse_string(ctx);
+        if(res.result == SOME) return create_token(ctx, res.type, res.size);
+    }
+
+    TokenResult simple_res = parse_simple(ctx);
+    if (simple_res.result == SOME) {
+        if(simple_res.type == SLASH_SLASH) ctx->in_comment = 1;
+        if(simple_res.type == SLASH_SLASH) printf("enter comment\n"); 
+        return create_token(ctx, simple_res.type, simple_res.size);
+    }
+
+    if(is_digit(c)) {
+        TokenResult nr = parse_number(ctx);
+        if(nr.result == SOME) {
+            return create_token(ctx, nr.type, nr.size);
+        }
+    }
+    
+    TokenResult rr = {0};
+    switch (c) {
+        case 'v': rr = parse_something(ctx, "var", VAR); break;
+        case 't': { 
+            char p = lexer_peek_next(ctx);
+            switch(p) {
+                case 'r': rr = parse_something(ctx, "true", TRUE); break;
+                case 'h': rr = parse_something(ctx, "this", THIS); break;
+                default: rr = parse_identifier(ctx, 0);
+            }
+            break; 
+        }
+        case 'f': {
+            char p = lexer_peek_next(ctx);
+            switch(p) {
+                case 'n': rr = parse_something(ctx, "fn", FN); break;
+                case 'a': rr = parse_something(ctx, "false", FALSE); break;
+                case 'o': rr = parse_something(ctx, "for", FOR); break;
+                default: rr = parse_identifier(ctx, 0);
+            };
+            break;
+        }
+        case 'i': rr = parse_something(ctx, "if", IF); break;
+        case 'e': rr = parse_something(ctx, "else", ELSE); break;
+        case 'w': rr = parse_something(ctx, "while", WHILE); break;
+        case 'n': rr = parse_something(ctx, "null", UUC_NULL); break;
+        case 's': rr = parse_something(ctx, "super", SUPER); break;
+        case 'c': rr = parse_something(ctx, "class", CLASS); break;
+        case 'r': rr = parse_something(ctx, "return", RETURN); break;
+        default: rr = parse_identifier(ctx, 0);
+    }
+    if (rr.result == SOME) {
+        return create_token(ctx, rr.type, rr.size);
+    }
+
+    return create_end(ctx);
+}
+
+Token create_end(LexerContext *ctx) {
+    return create_token(ctx, TOKEN_EOF, 1);
+}
+
+Token create_token(LexerContext *ctx, TokenType type, int size) {
+//    printf("cursor - size = %d\n", ctx->cursor - size);
+//    printf("input len %lu\n", strlen(ctx->input));
+//    printf("input is '%s'\n", ctx->input);
+    return (Token){
+        .start = &ctx->input[ctx->cursor - size], // begin pointer + current position - token size
+        .line = ctx->line,
+        .type = type,
+        .pos = ctx->cursor - size,
+        .length = size
+    };
+}
+
+Tokens *scan(char *input, int size) {
+    printf("[DEBUG] [Lexer] Scanning input string '%s'\n", input);
     Tokens *tokens = allocate(sizeof(Tokens));
     tokens->tokens = ALLOC_ARRAY(Token);
     tokens->capacity = 16;
     tokens->count = 0;
+    
+    LexerContext ctx = { 
+        .input = input, 
+        .line = 0, 
+        .cursor = 0, 
+        .in_comment = 0 
+    };
 
-    while (i < size) {
-        char c = input[i];
-        if (is_whitespace_no_new_line(c)) {
-            i++;
-            continue;
+    while(1) {
+        Token next = next_token(&ctx);
+        printf("[DEBUG] [Lexer] Scanned token '%s' at %d:%d length %d\n", token_name(next.type), ctx.line, ctx.cursor - 1, next.length);
+        add_token(tokens, next);
+        if(next.type == TOKEN_EOF) {
+            break;
         }
-
-        if (comment) {
-            i++;
-            if (c == '\n') {
-                comment = 0;
-                line++;
-            }
-            continue;
-        }
-        if (c == '\n') {
-            i++;
-            line++;
-            continue;
-        }
-
-        char n = peek(input, size, i);
-        Token token;
-        token.pos = i;
-        token.start = &input[i];
-        token.line = line;
-        int l = 1;
-        token.length = l;
-
-        if (c == '"') {
-            i++; // skipping open "
-            TokenResult r = parse_string(input, size, i);
-            token.type = r.type;
-            add_token(tokens, token);
-            i += r.size;
-            i++; // skipping closing "
-            continue;
-        }
-
-        TokenResult r = parse_simple(c, n);
-        if (r.result == SOME) {
-            token.type = r.type;
-            add_token(tokens, token);
-            if (r.type == SLASH_SLASH) comment = 1;
-            i += r.size;
-            continue;
-        }
-
-        if(is_digit(c)) {
-            printf("parsing number\n");
-            TokenResult nr = parse_number(input, size, i);
-            if(nr.result == SOME) {
-                token.type = nr.type;
-                add_token(tokens, token);
-                i += nr.size;
-                continue;
-            }
-        }
-
-        TokenResult rr = {0};
-        switch (c) {
-            case 'v': rr = parse_something(input, size, i, "var", VAR); break;
-            case 't': { 
-                char p = peek(input, size, i);
-                switch(p) {
-                    case 'r': rr = parse_something(input, size, i, "true", TRUE); break;
-                    case 'h': rr = parse_something(input, size, i, "this", THIS); break;
-                    default: rr = parse_identifier(input, size, i);
-                }
-                break; 
-            }
-            case 'f': {
-                char p = peek(input, size, i);
-                switch(p) {
-                    case 'n': rr = parse_something(input, size, i, "fn", FN); break;
-                    case 'a': rr = parse_something(input, size, i, "false", FALSE); break;
-                    case 'o': rr = parse_something(input, size, i, "for", FOR); break;
-                    default: rr = parse_identifier(input, size, i);
-                };
-                break;
-            }
-            case 'i': rr = parse_something(input, size, i, "if", IF); break;
-            case 'e': rr = parse_something(input, size, i, "else", ELSE); break;
-            case 'w': rr = parse_something(input, size, i, "while", WHILE); break;
-            case 'n': rr = parse_something(input, size, i, "null", UUC_NULL); break;
-            case 's': rr = parse_something(input, size, i, "super", SUPER); break;
-            case 'c': rr = parse_something(input, size, i, "class", CLASS); break;
-            case 'r': rr = parse_something(input, size, i, "return", RETURN); break;
-            default: rr = parse_identifier(input, size, i);
-        }
-        if (rr.result == SOME) {
-            token.type = rr.type;
-            add_token(tokens, token);
-            i += rr.size;
-            continue;
-        }
-
-        i++;
     }
     return tokens;
 }
 
-char peek(char *input, int size, int i) {
-    if ((1 + i) >= size) return EOF;
-    return input[i + 1];
+char lexer_peek(LexerContext *ctx) {
+    return ctx->input[ctx->cursor];
 }
 
-TokenResult parse_string(char *input, int size, int index) {
-    TokenResult r = {.result = SOME, .size = 0, .type = STRING};
+char lexer_peek_next(LexerContext *ctx) {
+    if(is_end(ctx)) return '\0';
+    return ctx->input[ctx->cursor + 1];
+}
+
+int is_end(LexerContext *ctx) {
+    return lexer_peek(ctx) == '\0' || lexer_peek(ctx) == EOF;
+}
+
+TokenResult parse_string(LexerContext *ctx) {
+    TokenResult r = {.result = SOME, .size = 1, .type = STRING}; // initial 1 for open "
+    char c = lexer_peek(ctx);
+    if(c != '"') {
+        printf("BIG ERRROR\n"); // should never happen...
+        exit(1);
+    }
+    ctx->cursor++;
+    c = lexer_peek(ctx);
     char p = '"';
-    char c = input[index];
     while ((c != '"' || p == '\\') && c != '\0' && c != EOF) {
+        ctx->cursor++;
         r.size++;
         p = c;
-        c = input[index + r.size];
+        c = lexer_peek(ctx);
     }
+    if(c == '\0' || c == EOF) {
+        printf("[ERROR] [Lexer] Unexpected end of input.\n");
+        r.type = TOKEN_ERROR;
+        return r;
+    }
+    ctx->cursor++; // closing "
+    r.size++;      // same
     return r;
 }
 
-TokenResult parse_number(char *input, int size, int index) {
-    int i = 0;
-    while(index + i < size && is_digit(input[index + i])) i++;
-    if(index + i < size && input[index + i] == '.' && is_digit(peek(input, size, index + i))) {
-        i++; // skip dot
-        while(index + i < size && is_digit(input[index + i])) i++;
+TokenResult parse_number(LexerContext *ctx) {
+    char c = lexer_peek(ctx);
+    int size = 0;
+    while(is_digit(c) || (c == '.' && is_digit(lexer_peek_next(ctx)))) {
+        size++;
+        ctx->cursor++;
+        c = lexer_peek(ctx);
     }
-    TokenResult r = { SOME, i, NUMBER };
+    TokenResult r = { .result = SOME, .size = size, .type = NUMBER };
     return r;
 }
 
-TokenResult parse_something(char *input, int size, int index, char *name, TokenType candidate) {
+TokenResult parse_something(LexerContext *ctx, char *name, TokenType candidate) {
     int i = 0;
     char r = name[i];
-    while( index + i < size && r != '\0' ) {
-        if( r != input[index + i] ) return parse_identifier(input, size, index);
+    while(r != '\0') {
+        if(r != lexer_peek(ctx) || is_end(ctx)) return parse_identifier(ctx, i);
         i ++;
         r = name[i];
+        ctx->cursor++;
     }
-    if( r != '\0' ) return parse_identifier(input, size, index);
-    char next_after = peek(input, size, index + i - 1);
+    if(r != '\0') return parse_identifier(ctx, i);
+    char next_after = lexer_peek(ctx);
     // check if next is valid identifier character
     if(is_digit(next_after) || is_letter(next_after) || next_after == '_') {
-        return parse_identifier(input, size, index);
+        return parse_identifier(ctx, i);
     }
-    TokenResult rr = { SOME, i, candidate };
+    TokenResult rr = { .result = SOME, .size = i, .type = candidate };
     return rr;
 }
 
-TokenResult parse_identifier(char *input, int size, int index) {
-    TokenResult r = {NONE, 0, IDENTIFIER};
-    int i = index;
-    char c = input[index];
-    if (c == '_' || is_letter(c) || is_digit(c)) {
-        r.result = SOME;
+TokenResult parse_identifier(LexerContext *ctx, int parsed) {
+    TokenResult r = { .result = SOME, .size = parsed, .type = IDENTIFIER};
+    int i = parsed;
+    char c = lexer_peek(ctx);
+    while (c == '_' || is_letter(c) || is_digit(c)) {
         i++;
-        c = input[i];
+        ctx->cursor++;
+        c = lexer_peek(ctx);
     }
-    while ((is_letter(c) || is_digit(c) || c == '_') && i < size) {
-        i++;
-        c = input[i];
-    }
-    r.size = i - index;
+    r.size = i;
     return r;
 }
 
@@ -237,7 +271,9 @@ int is_whitespace_no_new_line(char c) {
     return c == ' '|| c == '\t' || c == '\r' || c == '\0' || c == EOF;
 }
 
-TokenResult parse_simple(char c, char n) {
+TokenResult parse_simple(LexerContext *ctx) {
+    char c = lexer_peek(ctx);
+    char n = lexer_peek_next(ctx);
     TokenResult r;
     r.result = NONE;
     r.size = 0;
@@ -250,12 +286,14 @@ TokenResult parse_simple(char c, char n) {
                     r.type = p.type;
                     r.size = 2;
                     r.result = SOME;
+                    ctx->cursor += 2;
                     return r;
                 }
             }
             r.type = target.type;
             r.size = 1;
             r.result = SOME;
+            ctx->cursor += 1;
             return r;
         }
     }

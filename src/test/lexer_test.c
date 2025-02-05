@@ -60,6 +60,12 @@ TestCase test_cases[] = {
     {"2323 -23", {NUMBER, MINUS, NUMBER}, 3},
     {"2 .23", {NUMBER, DOT, NUMBER}, 3}, // not a valid number
     // {"2_23", {NUMBER}, 1}, // TODO add support of underscores for numbers ?
+
+
+    // comments
+    {"fn // comment return 2 + 2\n 222", {FN, SLASH_SLASH, NUMBER}, 3},
+    {"fn // comment // inside another one return 2 + 2\n 222", {FN, SLASH_SLASH, NUMBER}, 3},
+    {"fn // comment\n//\n//\n// //  2 + 2\n 222", {FN, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, NUMBER}, 6},
 };
 
 int amount = sizeof(test_cases) / sizeof(TestCase);
@@ -82,14 +88,14 @@ int run_lexer_test(int argc, const char *argv[]) {
 
 void test(char *code, TokenType expected[], int e_size) {
     Tokens *t = scan(code, strlen(code));
-    if (t->count != e_size) {
+    if (t->count != e_size + 1) {
         printf("\033[31mFAIL:\033[m Expected size does not equal scanned size. Expected: %d "
                "got: %d input string: \n'''\n%s\n'''\n",
                e_size, t->count, code);
         free_tokens(t);
         return;
     }
-    for (int i = 0; i < t->count; i++) {
+    for (int i = 0; i < t->count - 1; i++) {
         Token token = t->tokens[i];
         if (token.type != expected[i]) {
             printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(expected[i]), token_name(token.type));
@@ -97,6 +103,13 @@ void test(char *code, TokenType expected[], int e_size) {
             return;
         }
     }
+    Token last = t->tokens[t->count - 1];
+    if(last.type != TOKEN_EOF) {
+        printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(TOKEN_EOF), token_name(last.type));
+        free_tokens(t);
+        return;
+    }
+    free_tokens(t);
     // printf("Passed for: '%s'\n", code);
     passed++;
 }
