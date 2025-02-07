@@ -1,37 +1,71 @@
 CC=gcc
-CFLAGS=-I ./src -Wall
+CC_DEBUG=gcc -DUUC_LOG_DEBUG
+CC_TRACE=gcc -DUUC_LOG_TRACE -DUUC_LOG_DEBUG
+CFLAGS=-I ./src/include -Wall
 
 TARGET=./target
 OBJ_DIR=$(TARGET)/obj
-EXE_DIR=$(TARGET)/exe
-TEST_EXE_DIR=$(TARGET)/exe/test
+BIN_DIR=$(TARGET)/bin
+TEST_OBJ_DIR=$(TARGET)/test/obj
+TEST_BIN_DIR=$(TARGET)/test/bin
 SRC=./src
 
 SRCS = $(shell find $(SRC) -name '*.c' -not -path '**/test/*')
 TEST_SRCS = $(shell find $(SRC) -name '*.c' -not -name 'main.c')
 OBJ = $(SRCS:%.c=$(OBJ_DIR)/%.o)
-TEST_OBJ = $(TEST_SRCS:%.c=$(OBJ_DIR)/%.o)
+TEST_OBJ = $(TEST_SRCS:%.c=$(TEST_OBJ_DIR)/debug/%.o)
+TEST_TRACE_OBJ = $(TEST_SRCS:%.c=$(TEST_OBJ_DIR)/trace/%.o)
 
-$(EXE_DIR)/uuc: $(OBJ)
+$(BIN_DIR)/uuc: $(OBJ)
 	mkdir -p $(dir $@)
 	$(CC) -o $@ $^ $(CFLAGS)
 
-$(TEST_EXE_DIR)/uuc_test: $(TEST_OBJ)
+$(TEST_BIN_DIR)/debug: $(TEST_OBJ)
 	mkdir -p $(dir $@)
-	$(CC) -o $@ $^ $(CFLAGS)
+	$(CC_DEBUG) -o $@ $^ $(CFLAGS)
+
+$(TEST_BIN_DIR)/trace: $(TEST_TRACE_OBJ)
+	mkdir -p $(dir $@)
+	$(CC_TRACE) -o $@ $^ $(CFLAGS)
 
 $(OBJ_DIR)/%.o: %.c
 	mkdir -p $(dir $@)
 	$(CC) -c $< -o $@ $(CFLAGS)
 
-run: $(EXE_DIR)/uuc
-	$(EXE_DIR)/uuc
+$(TEST_OBJ_DIR)/debug/%.o: %.c
+	mkdir -p $(dir $@)
+	$(CC_DEBUG) -c $< -o $@ $(CFLAGS)
 
-test: $(TEST_EXE_DIR)/uuc_test
-	$(TEST_EXE_DIR)/uuc_test
+$(TEST_OBJ_DIR)/trace/%.o: %.c
+	mkdir -p $(dir $@)
+	$(CC_TRACE) -c $< -o $@ $(CFLAGS)
+
+build: $(BIN_DIR)/uuc
+
+run: $(BIN_DIR)/uuc
+	$(BIN_DIR)/uuc
+
+test: clean-test $(TEST_BIN_DIR)/debug
+	$(TEST_BIN_DIR)/debug
+
+test-trace: clean-test-trace $(TEST_BIN_DIR)/trace
+	$(TEST_BIN_DIR)/trace
 
 .PHONY: clean
 
-clean:
-	rm -rf $(EXE_DIR)/*
+clean: clean-test clean-test-trace clean-target
+
+clean-test-trace:
+	echo "Clearing target/test-trace directory"
+	rm -rf $(TEST_OBJ_DIR)/trace
+	rm -rf $(TEST_BIN_DIR)/trace
+
+clean-test:
+	echo "Clearing target/test directory"
+	rm -rf $(TEST_OBJ_DIR)/debug
+	rm -rf $(TEST_BIN_DIR)/debug
+
+clean-target:
+	echo "Clearing target directory"
 	rm -rf $(OBJ_DIR)/*
+	rm -rf $(BIN_DIR)/*

@@ -88,14 +88,14 @@ int run_lexer_test(int argc, const char *argv[]) {
 
 void test(char *code, TokenType expected[], int e_size) {
     Tokens *t = scan(code, strlen(code));
-    if (t->count != e_size + 1) {
+    if (t->size != e_size + 1) {
         printf("\033[31mFAIL:\033[m Expected size does not equal scanned size. Expected: %d "
                "got: %d input string: \n'''\n%s\n'''\n",
-               e_size, t->count, code);
+               e_size, t->size, code);
         free_tokens(t);
         return;
     }
-    for (int i = 0; i < t->count - 1; i++) {
+    for (int i = 0; i < t->size - 1; i++) {
         Token token = t->tokens[i];
         if (token.type != expected[i]) {
             printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(expected[i]), token_name(token.type));
@@ -103,7 +103,7 @@ void test(char *code, TokenType expected[], int e_size) {
             return;
         }
     }
-    Token last = t->tokens[t->count - 1];
+    Token last = t->tokens[t->size - 1];
     if(last.type != TOKEN_EOF) {
         printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(TOKEN_EOF), token_name(last.type));
         free_tokens(t);

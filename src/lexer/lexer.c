@@ -1,7 +1,7 @@
 #include "../include/lexer.h"
 #include "../include/memory.h"
 #include "../include/result.h"
-#include <stdio.h>
+#include "../include/log.h"
 #include <stdlib.h>
 #include <strings.h>
 
@@ -57,6 +57,15 @@ int is_digit(char c);
 int is_whitespace(char c);
 int is_whitespace_no_new_line(char c);
 
+LexerContext lexer_init_context(char *code) {
+    return (LexerContext){ 
+        .input = code,
+        .cursor = 0,
+        .in_comment = 0,
+        .line = 0
+    };
+}
+
 Token next_token(LexerContext *ctx) {
     char c = lexer_peek(ctx);
 
@@ -82,7 +91,6 @@ Token next_token(LexerContext *ctx) {
     TokenResult simple_res = parse_simple(ctx);
     if (simple_res.result == SOME) {
         if(simple_res.type == SLASH_SLASH) ctx->in_comment = 1;
-        if(simple_res.type == SLASH_SLASH) printf("enter comment\n"); 
         return create_token(ctx, simple_res.type, simple_res.size);
     }
 
@@ -136,9 +144,6 @@ Token create_end(LexerContext *ctx) {
 }
 
 Token create_token(LexerContext *ctx, TokenType type, int size) {
-//    printf("cursor - size = %d\n", ctx->cursor - size);
-//    printf("input len %lu\n", strlen(ctx->input));
-//    printf("input is '%s'\n", ctx->input);
     return (Token){
         .start = &ctx->input[ctx->cursor - size], // begin pointer + current position - token size
         .line = ctx->line,
@@ -149,11 +154,11 @@ Token create_token(LexerContext *ctx, TokenType type, int size) {
 }
 
 Tokens *scan(char *input, int size) {
-    printf("[DEBUG] [Lexer] Scanning input string '%s'\n", input);
+    LOG_TRACE("Scanning input string '%s'\n", input);
     Tokens *tokens = allocate(sizeof(Tokens));
     tokens->tokens = ALLOC_ARRAY(Token);
     tokens->capacity = 16;
-    tokens->count = 0;
+    tokens->size = 0;
     
     LexerContext ctx = { 
         .input = input, 
@@ -164,7 +169,7 @@ Tokens *scan(char *input, int size) {
 
     while(1) {
         Token next = next_token(&ctx);
-        printf("[DEBUG] [Lexer] Scanned token '%s' at %d:%d length %d\n", token_name(next.type), ctx.line, ctx.cursor - 1, next.length);
+        LOG_TRACE("Scanned token '%s' at %d:%d length %d\n", token_name(next.type), ctx.line, next.pos, next.length);
         add_token(tokens, next);
         if(next.type == TOKEN_EOF) {
             break;
@@ -190,7 +195,7 @@ TokenResult parse_string(LexerContext *ctx) {
     TokenResult r = {.result = SOME, .size = 1, .type = STRING}; // initial 1 for open "
     char c = lexer_peek(ctx);
     if(c != '"') {
-        printf("BIG ERRROR\n"); // should never happen...
+        LOG_ERROR("BIG ERRORR\n");
         exit(1);
     }
     ctx->cursor++;
@@ -203,7 +208,7 @@ TokenResult parse_string(LexerContext *ctx) {
         c = lexer_peek(ctx);
     }
     if(c == '\0' || c == EOF) {
-        printf("[ERROR] [Lexer] Unexpected end of input.\n");
+        LOG_ERROR("Unexpected end of input.\n");
         r.type = TOKEN_ERROR;
         return r;
     }
@@ -301,14 +306,14 @@ TokenResult parse_simple(LexerContext *ctx) {
 }
 
 void add_token(Tokens *tokens, Token token) {
-    if (tokens->count == tokens->capacity - 1) {
+    if (tokens->size == tokens->capacity - 1) {
         int new_capacity = INCREASE_CAPACITY(tokens->capacity);
         tokens->tokens = INCREASE_ARRAY(Token, tokens->tokens, tokens->capacity,
                                         new_capacity);
         tokens->capacity = new_capacity;
     }
-    tokens->tokens[tokens->count] = token;
-    tokens->count++;
+    tokens->tokens[tokens->size] = token;
+    tokens->size++;
 }
 
 void free_tokens(Tokens *tokens) {

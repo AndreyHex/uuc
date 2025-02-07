@@ -72,7 +72,7 @@ typedef struct {
 } Token;
 
 typedef struct {
-    int count;
+    int size;
     int capacity;
     Token *tokens;
 } Tokens;
