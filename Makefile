@@ -45,6 +45,10 @@ build: $(BIN_DIR)/uuc
 run: $(BIN_DIR)/uuc
 	$(BIN_DIR)/uuc
 
+run-trace: CC := $(CC_TRACE)
+run-trace: clean $(BIN_DIR)/uuc
+	$(BIN_DIR)/uuc
+
 test: clean-test $(TEST_BIN_DIR)/debug
 	$(TEST_BIN_DIR)/debug
 

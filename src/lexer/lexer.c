@@ -38,11 +38,11 @@ Rule rules[] = {
 
 int rules_size = sizeof(rules) / sizeof(Rule);
 
-TokenResult parse_simple(LexerContext *ctx);
-TokenResult parse_string(LexerContext *ctx);
-TokenResult parse_number(LexerContext *ctx);
-TokenResult parse_something(LexerContext *ctx, char *rest, TokenType candidate);
-TokenResult parse_identifier(LexerContext *ctx, int parsed);
+TokenResult lex_simple(LexerContext *ctx);
+TokenResult lex_string(LexerContext *ctx);
+TokenResult lex_number(LexerContext *ctx);
+TokenResult lex_something(LexerContext *ctx, char *rest, TokenType candidate);
+TokenResult lex_identifier(LexerContext *ctx, int parsed);
 
 Token create_token(LexerContext *ctx, TokenType type, int size);
 Token create_end(LexerContext *ctx);
@@ -84,18 +84,18 @@ Token next_token(LexerContext *ctx) {
     }
 
     if (c == '"') {
-        TokenResult res = parse_string(ctx);
+        TokenResult res = lex_string(ctx);
         if(res.result == SOME) return create_token(ctx, res.type, res.size);
     }
 
-    TokenResult simple_res = parse_simple(ctx);
+    TokenResult simple_res = lex_simple(ctx);
     if (simple_res.result == SOME) {
         if(simple_res.type == SLASH_SLASH) ctx->in_comment = 1;
         return create_token(ctx, simple_res.type, simple_res.size);
     }
 
     if(is_digit(c)) {
-        TokenResult nr = parse_number(ctx);
+        TokenResult nr = lex_number(ctx);
         if(nr.result == SOME) {
             return create_token(ctx, nr.type, nr.size);
         }
@@ -103,34 +103,34 @@ Token next_token(LexerContext *ctx) {
     
     TokenResult rr = {0};
     switch (c) {
-        case 'v': rr = parse_something(ctx, "var", VAR); break;
+        case 'v': rr = lex_something(ctx, "var", VAR); break;
         case 't': { 
             char p = lexer_peek_next(ctx);
             switch(p) {
-                case 'r': rr = parse_something(ctx, "true", TRUE); break;
-                case 'h': rr = parse_something(ctx, "this", THIS); break;
-                default: rr = parse_identifier(ctx, 0);
+                case 'r': rr = lex_something(ctx, "true", TRUE); break;
+                case 'h': rr = lex_something(ctx, "this", THIS); break;
+                default: rr = lex_identifier(ctx, 0);
             }
             break; 
         }
         case 'f': {
             char p = lexer_peek_next(ctx);
             switch(p) {
-                case 'n': rr = parse_something(ctx, "fn", FN); break;
-                case 'a': rr = parse_something(ctx, "false", FALSE); break;
-                case 'o': rr = parse_something(ctx, "for", FOR); break;
-                default: rr = parse_identifier(ctx, 0);
+                case 'n': rr = lex_something(ctx, "fn", FN); break;
+                case 'a': rr = lex_something(ctx, "false", FALSE); break;
+                case 'o': rr = lex_something(ctx, "for", FOR); break;
+                default: rr = lex_identifier(ctx, 0);
             };
             break;
         }
-        case 'i': rr = parse_something(ctx, "if", IF); break;
-        case 'e': rr = parse_something(ctx, "else", ELSE); break;
-        case 'w': rr = parse_something(ctx, "while", WHILE); break;
-        case 'n': rr = parse_something(ctx, "null", UUC_NULL); break;
-        case 's': rr = parse_something(ctx, "super", SUPER); break;
-        case 'c': rr = parse_something(ctx, "class", CLASS); break;
-        case 'r': rr = parse_something(ctx, "return", RETURN); break;
-        default: rr = parse_identifier(ctx, 0);
+        case 'i': rr = lex_something(ctx, "if", IF); break;
+        case 'e': rr = lex_something(ctx, "else", ELSE); break;
+        case 'w': rr = lex_something(ctx, "while", WHILE); break;
+        case 'n': rr = lex_something(ctx, "null", UUC_NULL); break;
+        case 's': rr = lex_something(ctx, "super", SUPER); break;
+        case 'c': rr = lex_something(ctx, "class", CLASS); break;
+        case 'r': rr = lex_something(ctx, "return", RETURN); break;
+        default: rr = lex_identifier(ctx, 0);
     }
     if (rr.result == SOME) {
         return create_token(ctx, rr.type, rr.size);
@@ -144,13 +144,15 @@ Token create_end(LexerContext *ctx) {
 }
 
 Token create_token(LexerContext *ctx, TokenType type, int size) {
-    return (Token){
+    Token t = {
         .start = &ctx->input[ctx->cursor - size], // begin pointer + current position - token size
         .line = ctx->line,
         .type = type,
         .pos = ctx->cursor - size,
         .length = size
     };
+    LOG_TRACE("Scanned token '%s' at %d:%d length %d\n", token_name(type), t.line, t.pos, t.length);
+    return t;
 }
 
 Tokens *scan(char *input, int size) {
@@ -169,7 +171,6 @@ Tokens *scan(char *input, int size) {
 
     while(1) {
         Token next = next_token(&ctx);
-        LOG_TRACE("Scanned token '%s' at %d:%d length %d\n", token_name(next.type), ctx.line, next.pos, next.length);
         add_token(tokens, next);
         if(next.type == TOKEN_EOF) {
             break;
@@ -191,7 +192,7 @@ int is_end(LexerContext *ctx) {
     return lexer_peek(ctx) == '\0' || lexer_peek(ctx) == EOF;
 }
 
-TokenResult parse_string(LexerContext *ctx) {
+TokenResult lex_string(LexerContext *ctx) {
     TokenResult r = {.result = SOME, .size = 1, .type = STRING}; // initial 1 for open "
     char c = lexer_peek(ctx);
     if(c != '"') {
@@ -217,7 +218,7 @@ TokenResult parse_string(LexerContext *ctx) {
     return r;
 }
 
-TokenResult parse_number(LexerContext *ctx) {
+TokenResult lex_number(LexerContext *ctx) {
     char c = lexer_peek(ctx);
     int size = 0;
     while(is_digit(c) || (c == '.' && is_digit(lexer_peek_next(ctx)))) {
@@ -229,26 +230,26 @@ TokenResult parse_number(LexerContext *ctx) {
     return r;
 }
 
-TokenResult parse_something(LexerContext *ctx, char *name, TokenType candidate) {
+TokenResult lex_something(LexerContext *ctx, char *name, TokenType candidate) {
     int i = 0;
     char r = name[i];
     while(r != '\0') {
-        if(r != lexer_peek(ctx) || is_end(ctx)) return parse_identifier(ctx, i);
+        if(r != lexer_peek(ctx) || is_end(ctx)) return lex_identifier(ctx, i);
         i ++;
         r = name[i];
         ctx->cursor++;
     }
-    if(r != '\0') return parse_identifier(ctx, i);
+    if(r != '\0') return lex_identifier(ctx, i);
     char next_after = lexer_peek(ctx);
     // check if next is valid identifier character
     if(is_digit(next_after) || is_letter(next_after) || next_after == '_') {
-        return parse_identifier(ctx, i);
+        return lex_identifier(ctx, i);
     }
     TokenResult rr = { .result = SOME, .size = i, .type = candidate };
     return rr;
 }
 
-TokenResult parse_identifier(LexerContext *ctx, int parsed) {
+TokenResult lex_identifier(LexerContext *ctx, int parsed) {
     TokenResult r = { .result = SOME, .size = parsed, .type = IDENTIFIER};
     int i = parsed;
     char c = lexer_peek(ctx);
@@ -276,7 +277,7 @@ int is_whitespace_no_new_line(char c) {
     return c == ' '|| c == '\t' || c == '\r' || c == '\0' || c == EOF;
 }
 
-TokenResult parse_simple(LexerContext *ctx) {
+TokenResult lex_simple(LexerContext *ctx) {
     char c = lexer_peek(ctx);
     char n = lexer_peek_next(ctx);
     TokenResult r;
