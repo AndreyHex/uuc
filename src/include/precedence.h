@@ -5,29 +5,16 @@
 #include "token.h"
 #include <stdint.h>
 
-typedef enum {
-    PREC_COMPARISON, // < <= > >=
-    PREC_TERM,       // - +
-    PREC_FACTOR,     // * /
-    PREC_UNARY,      // ! -
-    PREC_CALL,       // . ()
-} Precedence;
-
-typedef struct {
-    uint8_t l;
-    uint8_t r;
-} Binding;
-
-Binding binding_power(TokenType token_type) {
+uint8_t precedence(TokenType token_type) {
     switch(token_type) {
-        case PLUS: return {1, 2};
-        case MINUS: return {1, 2};
-        case STAR: return {3, 4};
-        case SLASH: return {3, 4};
-        default: {
-            LOG_ERROR("Getting binding power for unsupported token_type '%s'. Returning {0,0}.\n", token_name(token_type));
-            return {0};
-        }
+        case TOKEN_EOF:
+        case SEMICOLON: return 0;
+        case NUMBER: return 1;
+        case PLUS: return 2;
+        case MINUS: return 3;
+        case STAR: return 4;
+        case SLASH: return 5;
+        default: return 0;
     }
 }
 

@@ -31,7 +31,7 @@ void slice_push_code(OpCode code, Slice *slice) {
 }
 
 void slice_push_constant(double value, Slice *slice) {
-    if(slice->size <= slice->capacity + 3) { // + 3 instruction potentially
+    if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
         uint32_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);
         INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
@@ -86,6 +86,9 @@ void slice_print(Slice *slice) {
 const char* opcode_name(OpCode opcode) {
     switch(opcode) {
         case OP_ADD: return "OP_ADD";
+        case OP_SUBSTRACT: return "OP_SUBSTRACT";
+        case OP_MULTIPLY: return "OP_MULTIPLY";
+        case OP_DIVIDE: return "OP_DIVIDE";
         case OP_CONSTANT: return "OP_CONSTANT";
         default: return "UNKNOWN OP CODE";
     }

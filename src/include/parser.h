@@ -8,6 +8,7 @@
 typedef struct {
     LexerContext lexer_context;
     Slice bytecode;
+    Token next_token;
     Token current_token;
     Token previous_token;
 } ParserContext;

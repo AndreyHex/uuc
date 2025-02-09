@@ -12,7 +12,7 @@ void parse_unary(ParserContext *context);
 void parse_binary(ParserContext *context);
 void parse_number(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
-void parse_precedence(uint8_t min_bp, ParserContext *context);
+void parse_precedence(uint8_t min_p, ParserContext *context);
 
 void parser_advance(ParserContext *context);
 // returns current token
@@ -56,36 +56,28 @@ void parse_expression_statement(ParserContext *context) {
 }
 
 void parse_expression(ParserContext *context) {
-    parse_precedence(0, context);
+    parse_precedence(1, context);
 }
 
-void parse_precedence(uint8_t min_bp, ParserContext *context) {
-    Token number = parser_peek(context);
-    parser_advance(context);
-    Token op = parser_peek(context);
-
-    Binding bp = binding_power(op.type);
-
-    if(bp.l < min_bp) {
-        parse_number(op, context);
-        return; // ??
+void parse_precedence(uint8_t min_p, ParserContext *context) {
+    Token c = parser_peek(context);
+    if(c.type == NUMBER) {
+        parse_number(c, context);
+        parser_advance(context);
     }
 
-    parser_advance(context);
-    parse_precedence(bp.r, context);
-
-    parse_number(op, context);
-    if(op.type == PLUS) {
-        emit_opcode(OP_ADD, context);
-    } else {
-        LOG_ERROR("UNSUPPORTED OPERATION ---  WIP --- \n");
+    Token op = parser_peek(context);
+    LOG_INFO("parse_precedence token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
+    while(precedence(op.type) > min_p) {
+        parse_binary(context);
+        op = parser_peek(context);
     }
 }
 
 void parse_unary(ParserContext *context) {
     Token t = parser_peek(context);
     parser_advance(context);
-    parse_precedence(0 ,context);
+    parse_precedence(precedence(t.type) ,context);
     if(t.type == MINUS) {
         emit_opcode(OP_NEGATE, context);
     }
@@ -93,11 +85,16 @@ void parse_unary(ParserContext *context) {
 }
 
 void parse_binary(ParserContext *context) {
-    Token t = parser_peek(context);
+    Token op = parser_peek(context);
+    LOG_INFO("parse_binary token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
     parser_advance(context);
-    parse_precedence(0 ,context);
-    if(t.type == PLUS) {
-        emit_opcode(OP_ADD, context);
+    parse_precedence(precedence(op.type) ,context);
+    switch(op.type) {
+        case PLUS: emit_opcode(OP_ADD, context); break;
+        case MINUS: emit_opcode(OP_SUBSTRACT, context); break;
+        case STAR: emit_opcode(OP_MULTIPLY, context); break;
+        case SLASH: emit_opcode(OP_DIVIDE, context); break;
+        default: LOG_ERROR("Unsupported binary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }
 
@@ -139,7 +136,8 @@ int match(TokenType token_type, ParserContext *context) {
 }
 
 void emit_opcode(OpCode code, ParserContext *context) {
-    slice_push_code(OP_ADD, &context->bytecode);
+    slice_push_code(code, &context->bytecode);
+    slice_print(&context->bytecode);
 }
 
 void emit_constant(double value, ParserContext *context) {
