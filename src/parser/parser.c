@@ -64,6 +64,10 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
     if(c.type == NUMBER) {
         parse_number(c, context);
         parser_advance(context);
+    } else if (c.type == LEFT_PAREN) {
+        parse_grouping(context);
+    } else {
+        parse_unary(context);
     }
 
     Token op = parser_peek(context);
@@ -75,20 +79,21 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
 }
 
 void parse_unary(ParserContext *context) {
-    Token t = parser_peek(context);
+    Token op = parser_peek(context);
     parser_advance(context);
-    parse_precedence(precedence(t.type) ,context);
-    if(t.type == MINUS) {
-        emit_opcode(OP_NEGATE, context);
+    parse_precedence(precedence(op.type) ,context);
+    switch(op.type) {
+        case MINUS: emit_opcode(OP_NEGATE, context); break;
+        case BANG: emit_opcode(OP_NEGATE, context); break;
+        default: LOG_ERROR("Unsupported unary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
-    // else `!`
 }
 
 void parse_binary(ParserContext *context) {
     Token op = parser_peek(context);
     LOG_INFO("parse_binary token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
     parser_advance(context);
-    parse_precedence(precedence(op.type) ,context);
+    parse_precedence(precedence(op.type), context);
     switch(op.type) {
         case PLUS: emit_opcode(OP_ADD, context); break;
         case MINUS: emit_opcode(OP_SUBSTRACT, context); break;
@@ -99,9 +104,9 @@ void parse_binary(ParserContext *context) {
 }
 
 void parse_grouping(ParserContext *context) {
-    parser_consume(RIGHT_PAREN, context);
-    parse_expression_statement(context);
     parser_consume(LEFT_PAREN, context);
+    parse_expression(context);
+    parser_consume(RIGHT_PAREN, context);
 }
 
 void parser_advance(ParserContext *context) {

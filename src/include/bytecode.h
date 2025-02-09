@@ -2,13 +2,14 @@
 #define uuc_bytecode_h
 
 #include <stdint.h>
-#include "values.h"
+#include "collection.h"
 
 typedef enum {
     OP_CONSTANT,
     OP_CONSTANT_16,
 
     OP_NEGATE,
+    OP_NOT,
 
     OP_ADD,
     OP_SUBSTRACT,
@@ -27,8 +28,10 @@ typedef struct {
 } Slice;
 
 Slice slice_init(uint32_t initial_capacity);
-void slice_print(Slice *slice);
 void slice_push_code(OpCode code, Slice *slice);
 void slice_push_constant(double value, Slice *slice);
+
+void slice_print(Slice *slice);
+const char* opcode_name(OpCode opcode);
 
 #endif

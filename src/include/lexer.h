@@ -21,7 +21,7 @@ LexerContext lexer_init_context(char *code);
 Tokens *scan(char *, int);
 Token next_token(LexerContext *ctx);
 
-void add_token(Tokens *, Token);
-void free_tokens(Tokens *);
+void add_token(Tokens *tokens, Token token);
+void free_tokens(Tokens *tokens);
 
 #endif

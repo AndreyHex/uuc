@@ -1,5 +1,6 @@
-#include "uuc_test.h"
 #include "../include/lexer.h"
+#include "uuc_test.h"
+#include "lexer_test.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -69,47 +70,42 @@ TestCase test_cases[] = {
 };
 
 int amount = sizeof(test_cases) / sizeof(TestCase);
-int passed = 0;
 
-void test(char *code, TokenType expected[], int e_size);
+TestStatus lexer_test_case(char *code, TokenType expected[], int e_size);
 
-int run_lexer_test(int argc, const char *argv[]) {
+TestResults run_lexer_test(int argc, const char *argv[]) {
+    TestResults res = init_test_results(16);
     for (int i = 0; i < amount; i++) {
         TestCase c = test_cases[i];
-        test(c.input, c.expected, c.exp_size);
+        TestStatus s = lexer_test_case(c.input, c.expected, c.exp_size);
+        add_result(&res, (TestResult){ .result = s });
     }
-    if(passed == amount) {
-        printf("Tests results:\n  Test cases: %d\n  \033[32mPassed: %d\033[m\n  Failed: %d\n", amount, passed, amount - passed);
-    } else {
-        printf("Tests results:\n  Test cases: %d\n  \033[32mPassed: %d\033[m\n  \033[31mFailed: %d\033[m\n", amount, passed, amount - passed);
-    }
-    return 0;
+    return res;
 }
 
-void test(char *code, TokenType expected[], int e_size) {
+TestStatus lexer_test_case(char *code, TokenType expected[], int e_size) {
     Tokens *t = scan(code, strlen(code));
     if (t->size != e_size + 1) {
         printf("\033[31mFAIL:\033[m Expected size does not equal scanned size. Expected: %d "
                "got: %d input string: \n'''\n%s\n'''\n",
                e_size, t->size, code);
         free_tokens(t);
-        return;
+        return FAIL;
     }
     for (int i = 0; i < t->size - 1; i++) {
         Token token = t->tokens[i];
         if (token.type != expected[i]) {
             printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(expected[i]), token_name(token.type));
             free_tokens(t);
-            return;
+            return FAIL;
         }
     }
     Token last = t->tokens[t->size - 1];
     if(last.type != TOKEN_EOF) {
         printf("\033[31mFAIL:\033[m Expected token does not correspond to scanned. Expected '%s' got '%s'\n", token_name(TOKEN_EOF), token_name(last.type));
         free_tokens(t);
-        return;
+        return FAIL;
     }
     free_tokens(t);
-    // printf("Passed for: '%s'\n", code);
-    passed++;
+    return PASS;
 }

@@ -17,6 +17,8 @@ typedef struct {
 typedef Values ValueStack;
 typedef Values ValueList;
 
+Values collection_copy(Values collection);
+
 ValueStack stack_init(uint32_t initial_capacity);
 void stack_push(ValueStack *stack, Value val);
 Value stack_pop(ValueStack *stack);

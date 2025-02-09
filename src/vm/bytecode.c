@@ -2,6 +2,7 @@
 #include "../include/log.h"
 #include "../include/memory.h"
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <values.h>
 
@@ -69,22 +70,27 @@ void slice_print(Slice *slice) {
     printf("============ Content ============\n");
     for(int i = 0; i < slice->size; i++) {
         uint8_t code = slice->codes[i];
-        printf("%d | ", i);
+        printf("%4d | ", i);
         if(code == OP_CONSTANT) {
             uint8_t index = slice->codes[i + 1];
-            printf("%d:%s = %f", code, opcode_name(code), slice->constants.head[index]);
+            printf("%3d:%s = %f", code, opcode_name(code), slice->constants.head[index]);
             i++;
         } else if(code == OP_CONSTANT_16) {
         } else {
-            printf("%d:%s", code, opcode_name(code));
+            printf("%3d:%s", code, opcode_name(code));
         }
         printf("\n");
     }
     printf("=================================\n");
 }
 
+
+// TODO: change to array or smth
 const char* opcode_name(OpCode opcode) {
     switch(opcode) {
+        case OP_NOT: return "OP_NOT";
+        case OP_NEGATE: return "OP_NEGATE";
+
         case OP_ADD: return "OP_ADD";
         case OP_SUBSTRACT: return "OP_SUBSTRACT";
         case OP_MULTIPLY: return "OP_MULTIPLY";
