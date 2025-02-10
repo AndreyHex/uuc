@@ -1,5 +1,6 @@
 #include "lexer_test.h"
 #include "test_parser.h"
+#include "test_vm.h"
 
 void summarize_tests(TestResults results, int *passed, int *all) {
     int p = 0;
@@ -17,11 +18,13 @@ void summarize_tests(TestResults results, int *passed, int *all) {
 int main(int argc, const char *argv[]) {
     TestResults parser_res = run_parser_test(argc, argv);
     TestResults lexer_res = run_lexer_test(argc, argv);
+    TestResults vm_res = run_vm_test(argc, argv);
     
     int passed = 0;
     int all = 0;
     summarize_tests(parser_res, &passed, &all);
     summarize_tests(lexer_res, &passed, &all);
+    summarize_tests(vm_res, &passed, &all);
 
     if(passed == all) {
         printf("Tests results:\n  Test cases: %d\n  \033[32mPassed: %d\033[m\n  Failed: %d\n", all, passed, all - passed);

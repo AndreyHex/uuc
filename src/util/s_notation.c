@@ -4,6 +4,8 @@
 #include <stdlib.h>
 #include <string.h>
 
+char opcode_op_char(OpCode opcode);
+
 // create string epression in s-notation (polish) for testing puproses
 // expecting single expression in slice
 void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
@@ -28,11 +30,29 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
             char *a = &stack[s_size * buf_s];
             s_size--;
             char *b = &stack[s_size * buf_s];
-            sprintf(bb, "( %s %s %s )", opcode_name(code), b ,a);
+            sprintf(bb, "( %c %s %s )", opcode_op_char(code), b, a);
+            memcpy(&stack[s_size * buf_s], bb, buf_s);
+            s_size++;
+        } else if (code >= OP_NEGATE && code <= OP_NOT) {
+            s_size--;
+            char *a = &stack[s_size * buf_s];
+            sprintf(bb, "( %c %s )", opcode_op_char(code), a);
             memcpy(&stack[s_size * buf_s], bb, buf_s);
             s_size++;
         }
     }
     sprintf(buf, "%s", stack);
     free(stack);
+}
+
+char opcode_op_char(OpCode opcode) {
+    switch(opcode) {
+        case OP_ADD: return '+';
+        case OP_SUBSTRACT: return '-';
+        case OP_MULTIPLY: return '*';
+        case OP_DIVIDE: return '/';
+        case OP_NOT: return '!';
+        case OP_NEGATE: return '-';
+        default: return 'e';
+    }
 }

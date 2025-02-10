@@ -71,7 +71,7 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
     }
 
     Token op = parser_peek(context);
-    LOG_INFO("parse_precedence token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
+    LOG_TRACE("parse_precedence token op: %s precedence: %d min_p: %d position: %d:%d\n", token_name(op.type), precedence(op.type), min_p, op.line, op.pos);
     while(precedence(op.type) > min_p) {
         parse_binary(context);
         op = parser_peek(context);
@@ -81,17 +81,17 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
 void parse_unary(ParserContext *context) {
     Token op = parser_peek(context);
     parser_advance(context);
-    parse_precedence(precedence(op.type) ,context);
+    parse_precedence(precedence(op.type) + 6, context); // prefix binding is stronger for '-' as example
     switch(op.type) {
         case MINUS: emit_opcode(OP_NEGATE, context); break;
-        case BANG: emit_opcode(OP_NEGATE, context); break;
+        case BANG: emit_opcode(OP_NOT, context); break;
         default: LOG_ERROR("Unsupported unary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }
 
 void parse_binary(ParserContext *context) {
     Token op = parser_peek(context);
-    LOG_INFO("parse_binary token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
+    LOG_TRACE("parse_binary token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
     parser_advance(context);
     parse_precedence(precedence(op.type), context);
     switch(op.type) {
@@ -142,7 +142,6 @@ int match(TokenType token_type, ParserContext *context) {
 
 void emit_opcode(OpCode code, ParserContext *context) {
     slice_push_code(code, &context->bytecode);
-    slice_print(&context->bytecode);
 }
 
 void emit_constant(double value, ParserContext *context) {

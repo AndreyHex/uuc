@@ -1,3 +1,4 @@
+#include <math.h>
 #include <stdio.h>
 
 int assert_str(char *expected, char *test) {
@@ -17,6 +18,14 @@ int assert_str(char *expected, char *test) {
         i++;
         e = expected[i];
         t = test[i];
+    }
+    return 0;
+}
+
+int assert_double_d(double expected, double test, double delta) {
+    if(fabs(expected - test) > delta) {
+        printf("\033[31mAssertion error: numbers are different -- (right) %f != (left) %f\033[m\n", expected, test);
+        return 1;
     }
     return 0;
 }

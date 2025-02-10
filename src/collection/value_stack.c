@@ -36,7 +36,7 @@ Value stack_pop(ValueStack *stack) {
     }
     Value r = *stack->tail;
     stack->size--;
-    stack->tail = &stack->head[stack->size];
+    stack->tail = &stack->head[stack->size - 1];
     return r; 
 }
 

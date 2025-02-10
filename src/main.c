@@ -6,11 +6,6 @@
 
 int main(int argc, const char *argv[]) {
     printf("hello wordld\n");
-
-
-    // Slice slice = parse_code(" 1 + 2 * 3 / 4 + 5 - 6 + 7 / 8 * 9;");
-    // Slice slice = parse_code("1 + 2 * 3;");
-    // Slice slice = parse_code("1 + 2 + 3 + 4 + 5;");
     char buf[400];
 
     Slice slice = parse_code("1 + (2 + 3) * 4 + 5;");
@@ -20,6 +15,8 @@ int main(int argc, const char *argv[]) {
     slice_print(&slice);
     VM vm = vm_init(slice);
     vm_run(&vm);
+
+    printf("Result: %f\n", slice.constants.head[0]);
 
     return 0;
 }

@@ -25,7 +25,9 @@ Value list_get(ValueList *list, uint32_t index) {
 }
 
 uint64_t list_push(ValueList *list, Value val) {
+    #if defined (UUC_LEVEL_TRACE)
     list_print(list);
+    #endif
     if(list->size == list->capacity) {
         uint64_t new_cap = INCREASE_CAPACITY(list->capacity);
         LOG_TRACE("Growing list size from %d to %ld\n", list->size, new_cap);
