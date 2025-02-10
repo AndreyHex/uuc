@@ -4,8 +4,7 @@
 #include "log.h"
 #include <stdint.h>
 #include <stdlib.h>
-
-typedef double Value;
+#include "uuc_type.h"
 
 typedef struct {
     Value *head;

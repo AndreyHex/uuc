@@ -1,5 +1,6 @@
 #include <math.h>
 #include <stdio.h>
+#include "../include/uuc_type.h"
 
 int assert_str(char *expected, char *test) {
     int i = 0;
@@ -18,6 +19,27 @@ int assert_str(char *expected, char *test) {
         i++;
         e = expected[i];
         t = test[i];
+    }
+    return 0;
+}
+
+int assert_type(UucType expected, Value val) {
+    if(val.type != expected) {
+        printf("\033[31mAssertion error: type mistmatch -- (right) %d is not (left) %d\033[m\n", expected, val.type);
+        return 1;
+    }
+    return 0;
+
+}
+
+int assert_is_integer(Value val) {
+    return assert_type(TYPE_INT, val);
+}
+
+int assert_integer(int expected, int test) {
+    if(expected != test) {
+        printf("\033[31mAssertion error: numbers are different -- (right) %d != (left) %d\033[m\n", expected, test);
+        return 1;
     }
     return 0;
 }

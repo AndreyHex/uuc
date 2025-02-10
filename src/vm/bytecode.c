@@ -31,7 +31,7 @@ void slice_push_code(OpCode code, Slice *slice) {
     slice->size++;
 }
 
-void slice_push_constant(double value, Slice *slice) {
+void slice_push_constant(Value value, Slice *slice) {
     if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
         uint32_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);

@@ -5,6 +5,7 @@
 
 void vm_tick(VM *vm);
 void vm_advance(VM *vm);
+int uuc_type_check(Value val, UucType type, const char *msg);
 
 VM vm_init(Slice slice) {
     VM vm = {
@@ -46,41 +47,50 @@ void vm_tick(VM *vm) {
             stack_push(stack, list_get(constants, index));
             break;
         }
+        case OP_NOT: {
+            Value v = stack_pop(stack);
+            uuc_type_check(v, TYPE_BOOL, "Cannot apply logical not to non bool type.");
+            v.as.uuc_bool = !v.as.uuc_bool;
+            stack_push(stack, v);
+            break;
+        }
         case OP_NEGATE: {
-            stack_push(stack, -stack_pop(stack));
+            Value v = stack_pop(stack);
+            uuc_type_check(v, TYPE_INT, "Cannot negate non number type.");
+            stack_push(stack, type_int(-(stack_pop(stack).as.uuc_int)));
             break;
         }
         case OP_ADD: {
             Value b = stack_pop(stack);
             Value a = stack_pop(stack);
             LOG_TRACE("a + b => %f + %f\n", a, b);
-            stack_push(stack, a + b);
+            stack_push(stack, type_int(a.as.uuc_int + b.as.uuc_int));
             break;
         }
         case OP_SUBSTRACT: {
             Value b = stack_pop(stack);
             Value a = stack_pop(stack);
             LOG_TRACE("a - b => %f - %f\n", a, b);
-            stack_push(stack, a - b);
+            stack_push(stack, type_int(a.as.uuc_int - b.as.uuc_int));
             break;
         }
         case OP_MULTIPLY: {
             Value b = stack_pop(stack);
             Value a = stack_pop(stack);
             LOG_TRACE("a * b => %f * %f\n", a, b);
-            stack_push(stack, a * b);
+            stack_push(stack, type_int(a.as.uuc_int * b.as.uuc_int));
             break;
         }
         case OP_DIVIDE: {
             Value b = stack_pop(stack);
             Value a = stack_pop(stack);
             LOG_TRACE("a / b => %f / %f\n", a, b);
-            stack_push(stack, a / b);
+            stack_push(stack, type_int(a.as.uuc_int / b.as.uuc_int));
             break;
         }
         case OP_RETURN: {
             printf("OP_RETURN\n");
-            printf("%f\n", stack_pop(stack));
+            // printf("%f\n", stack_pop(stack));
             break;
         }
         default: printf("DEFAULT\n");
@@ -88,4 +98,12 @@ void vm_tick(VM *vm) {
     #if defined (UUC_LEVEL_TRACE)
     stack_print(&vm->value_stack);
     #endif
+}
+
+int uuc_type_check(Value val, UucType type, const char *msg) {
+    if(val.type != type) {
+        LOG_ERROR("%s\n", msg);
+        exit(1);
+    }
+    return 0;
 }

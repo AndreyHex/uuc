@@ -24,7 +24,7 @@ Token parser_prev(ParserContext *context);
 // or exits with error
 void parser_consume(TokenType token_type, ParserContext *context);
 
-void emit_constant(double value, ParserContext *context);
+void emit_constant(Value value, ParserContext *context);
 void emit_opcode(OpCode code, ParserContext *context);
 
 // match token_type with current token in context
@@ -81,8 +81,8 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
 void parse_unary(ParserContext *context) {
     Token op = parser_peek(context);
     parser_advance(context);
-    parse_precedence(precedence(op.type) + 6, context); // prefix binding is stronger for '-' as example
-    switch(op.type) {
+    // prefix binding is stronger for '-' as example
+    parse_precedence(precedence(op.type) + 6, context);     switch(op.type) {
         case MINUS: emit_opcode(OP_NEGATE, context); break;
         case BANG: emit_opcode(OP_NOT, context); break;
         default: LOG_ERROR("Unsupported unary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
@@ -124,8 +124,8 @@ void parser_consume(TokenType token_type, ParserContext *context) {
 }
 
 void parse_number(Token token, ParserContext *context) {
-    double val = strtod(token.start, NULL);
-    emit_constant(val, context);
+    long val = strtol(token.start, NULL, 10);
+    emit_constant((Value){ .type = TYPE_INT, .as = val }, context);
 }
 
 Token parser_peek(ParserContext *context) {
@@ -144,6 +144,6 @@ void emit_opcode(OpCode code, ParserContext *context) {
     slice_push_code(code, &context->bytecode);
 }
 
-void emit_constant(double value, ParserContext *context) {
+void emit_constant(Value value, ParserContext *context) {
     slice_push_constant(value, &context->bytecode);
 }

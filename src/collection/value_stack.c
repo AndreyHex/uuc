@@ -32,7 +32,7 @@ void stack_push(ValueStack *stack, Value val) {
 Value stack_pop(ValueStack *stack) {
     if(stack->size == 0) {
         LOG_ERROR("Popping empty stack!\n");
-        return 0;
+        return type_null();
     }
     Value r = *stack->tail;
     stack->size--;
@@ -43,7 +43,7 @@ Value stack_pop(ValueStack *stack) {
 Value stack_peek(ValueStack *stack) {
     if(stack->size == 0) {
         LOG_ERROR("Peeking in empty stack!\n");
-        return 0;
+        return type_null();
     }
     return *stack->tail;
 }
@@ -51,7 +51,14 @@ Value stack_peek(ValueStack *stack) {
 void stack_print(ValueStack *stack) {
     printf("Stack dump. Capacity: %d Size: %d. Content: [", stack->capacity, stack->size);
     for(int i = 0; i < stack->size; i++) {
-        printf("%f, ", stack->head[i]);
+        Value v = stack->head[i];
+        switch(v.type) {
+            case TYPE_INT: printf("%d, ", v.as.uuc_int); break;
+            case TYPE_DOUBLE: printf("%.3f, ", v.as.uuc_double); break;
+            case TYPE_BOOL: printf("%s, ", v.as.uuc_bool ? "true" : "false"); break;
+            case TYPE_NULL: printf("null"); break;
+            default: break;
+        }
     }
     printf("]\n");
 }

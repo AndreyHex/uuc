@@ -23,7 +23,12 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
                 s_cap *= 2;
                 stack = realloc(stack, s_cap * buf_s * sizeof(char));
             }
-            sprintf(&stack[s_size * buf_s], "%.2f", slice->constants.head[index]);
+            Value v = slice->constants.head[index];
+            switch(v.type) {
+                case TYPE_INT: sprintf(&stack[s_size * buf_s], "%ld", v.as.uuc_int); break;
+                case TYPE_DOUBLE: sprintf(&stack[s_size * buf_s], "%.2f", v.as.uuc_double); break;
+                default: break;
+            }
             s_size++;
         } else if (code >= OP_ADD && code <= OP_DIVIDE) {
             s_size--;

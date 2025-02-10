@@ -28,9 +28,10 @@ TestResult run_vm_test_case(double expecting, char *code) {
 #if defined(UUC_LEVEL_TRACE)
     stack_print(&vm.value_stack);
 #endif
-    double r = *vm.value_stack.tail;
-    printf("'%s' => %f\n", code, r);
-    if(assert_double(expecting, r)) {
+    Value r = *vm.value_stack.tail;
+    assert_is_integer(r);
+    printf("'%s' => %d\n", code, r.as.uuc_int);
+    if(assert_integer(expecting, r.as.uuc_int)) {
         return (TestResult){ .result = FAIL };
     }
     return (TestResult){ .result = PASS };

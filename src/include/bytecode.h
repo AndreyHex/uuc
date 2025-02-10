@@ -29,7 +29,7 @@ typedef struct {
 
 Slice slice_init(uint32_t initial_capacity);
 void slice_push_code(OpCode code, Slice *slice);
-void slice_push_constant(double value, Slice *slice);
+void slice_push_constant(Value value, Slice *slice);
 
 void slice_print(Slice *slice);
 const char* opcode_name(OpCode opcode);
