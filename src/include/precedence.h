@@ -7,7 +7,8 @@
 
 uint8_t precedence(TokenType token_type) {
     switch(token_type) {
-        case NUMBER: return 1;
+        case INTEGER:
+        case DOUBLE: return 1;
         case PLUS: return 2;
         case MINUS: return 2;
         case STAR: return 4;

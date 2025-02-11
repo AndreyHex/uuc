@@ -8,7 +8,6 @@
 
 typedef struct {
     Value *head;
-    Value *tail;
     uint32_t capacity;
     uint32_t size;
 } Values;
@@ -21,6 +20,7 @@ Values collection_copy(Values collection);
 ValueStack stack_init(uint32_t initial_capacity);
 void stack_push(ValueStack *stack, Value val);
 Value stack_pop(ValueStack *stack);
+Value stack_peek(ValueStack *stack);
 void stack_print(Values *stack);
 void stack_free(Values *stack);
 

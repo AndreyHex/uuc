@@ -46,12 +46,14 @@ TestResults run_parser_test(int argc, const char *argv[]) {
                            "1/2*3/4*5;");
     parser_test_case(&res, "( * ( / ( * ( / ( ! 1 ) ( ! 2 ) ) ( ! 3 ) ) ( - 4 ) ) ( - 5 ) )", 
                            "!1/!2*!3/-4*-5;");
+    parser_test_case(&res, "( + 1 2.00 )", 
+                           "1+2.0;");
     return res;
 }
 
 void parser_test_case(TestResults *results, char *expecting, char *code) {
     char buf[300];
-    printf("Input expression: '%s'\n", code);
+    printf("Test parse input expression: '%s'\n", code);
     Slice slice = parse_code(code);
     slice_s_notation(&slice, buf, 300);
     int r = assert_str(expecting, buf);

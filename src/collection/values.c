@@ -10,6 +10,5 @@ Values collection_copy(Values collection) {
         .head = ptr,
         .capacity = cap,
         .size = size,
-        .tail = &ptr[size - 1],
     };
 }

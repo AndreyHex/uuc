@@ -33,7 +33,8 @@ const char *TOKEN_NAMES[] = {
 
     "IDENTIFIER",
     "STRING",
-    "NUMBER",
+    "INTEGER",
+    "DOUBLE",
     "TRUE",
     "FALSE",
 

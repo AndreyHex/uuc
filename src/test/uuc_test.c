@@ -15,7 +15,7 @@ TestResults init_test_results(uint64_t initial_capacity) {
 int add_result(TestResults *results, TestResult result) {
     if(results->size == results->capacity) {
         int new_cap = INCREASE_CAPACITY(results->capacity);
-        LOG_TRACE("Increasing TestResults size from %d to %d\n", results->capacity, new_cap);
+        LOG_TRACE("Increasing TestResults size from %ld to %d\n", results->capacity, new_cap);
         results->results = INCREASE_ARRAY(TestResult, results->results, results->capacity, new_cap);
         results->capacity = new_cap;
     }

@@ -11,6 +11,7 @@ void parse_expression(ParserContext *context);
 void parse_unary(ParserContext *context);
 void parse_binary(ParserContext *context);
 void parse_number(Token token, ParserContext *context);
+void parse_bool(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
 void parse_precedence(uint8_t min_p, ParserContext *context);
 
@@ -61,8 +62,14 @@ void parse_expression(ParserContext *context) {
 
 void parse_precedence(uint8_t min_p, ParserContext *context) {
     Token c = parser_peek(context);
-    if(c.type == NUMBER) {
+    if(c.type == INTEGER || c.type == DOUBLE) {
         parse_number(c, context);
+        parser_advance(context);
+    } else if (c.type == TRUE || c.type == FALSE) {
+        parse_bool(c, context);
+        parser_advance(context);
+    } else if (c.type == TOKEN_NULL) {
+        emit_constant(type_null(), context);
         parser_advance(context);
     } else if (c.type == LEFT_PAREN) {
         parse_grouping(context);
@@ -124,8 +131,18 @@ void parser_consume(TokenType token_type, ParserContext *context) {
 }
 
 void parse_number(Token token, ParserContext *context) {
-    long val = strtol(token.start, NULL, 10);
-    emit_constant((Value){ .type = TYPE_INT, .as = val }, context);
+    if(token.type == INTEGER) {
+        long val = strtol(token.start, NULL, 10);
+        emit_constant((Value){ .type = TYPE_INT, .as = { .uuc_int = val } }, context);
+    } else {
+        double val = strtod(token.start, NULL);
+        emit_constant((Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = val } }, context);
+    }
+}
+
+void parse_bool(Token token, ParserContext *context) {
+    if(token.type == TRUE) emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 1 } }, context);
+    else emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 0 } }, context);
 }
 
 Token parser_peek(ParserContext *context) {

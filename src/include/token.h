@@ -34,7 +34,8 @@ typedef enum {
 
     IDENTIFIER,
     STRING,
-    NUMBER,
+    INTEGER,
+    DOUBLE,
     TRUE,
     FALSE,
 
@@ -57,7 +58,7 @@ typedef enum {
     IF,
     ELSE,
 
-    UUC_NULL,
+    TOKEN_NULL,
 
     TOKEN_EOF,
     TOKEN_ERROR,

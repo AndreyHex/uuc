@@ -5,6 +5,12 @@
 #include "values.h"
 #include <stdint.h>
 
+typedef enum {
+    UUC_OK,
+    UUC_COMP_ERROR,
+    UUC_RUNTIME_ERROR,
+} ExeResult;
+
 typedef struct {
     Slice slice;
     uint8_t *ip; // instruction ptr
@@ -13,6 +19,6 @@ typedef struct {
 } VM;
 
 VM vm_init(Slice slice);
-void vm_run(VM *vm);
+ExeResult vm_run(VM *vm);
 
 #endif

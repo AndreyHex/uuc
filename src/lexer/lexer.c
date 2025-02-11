@@ -126,7 +126,7 @@ Token next_token(LexerContext *ctx) {
         case 'i': rr = lex_something(ctx, "if", IF); break;
         case 'e': rr = lex_something(ctx, "else", ELSE); break;
         case 'w': rr = lex_something(ctx, "while", WHILE); break;
-        case 'n': rr = lex_something(ctx, "null", UUC_NULL); break;
+        case 'n': rr = lex_something(ctx, "null", TOKEN_NULL); break;
         case 's': rr = lex_something(ctx, "super", SUPER); break;
         case 'c': rr = lex_something(ctx, "class", CLASS); break;
         case 'r': rr = lex_something(ctx, "return", RETURN); break;
@@ -221,12 +221,14 @@ TokenResult lex_string(LexerContext *ctx) {
 TokenResult lex_number(LexerContext *ctx) {
     char c = lexer_peek(ctx);
     int size = 0;
+    TokenType t = INTEGER;
     while(is_digit(c) || (c == '.' && is_digit(lexer_peek_next(ctx)))) {
+        if(c == '.') t = DOUBLE;
         size++;
         ctx->cursor++;
         c = lexer_peek(ctx);
     }
-    TokenResult r = { .result = SOME, .size = size, .type = NUMBER };
+    TokenResult r = { .result = SOME, .size = size, .type = t };
     return r;
 }
 

@@ -27,6 +27,7 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
             switch(v.type) {
                 case TYPE_INT: sprintf(&stack[s_size * buf_s], "%ld", v.as.uuc_int); break;
                 case TYPE_DOUBLE: sprintf(&stack[s_size * buf_s], "%.2f", v.as.uuc_double); break;
+                case TYPE_BOOL: sprintf(&stack[s_size * buf_s], "%s", v.as.uuc_bool ? "true" : "false"); break;
                 default: break;
             }
             s_size++;

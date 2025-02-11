@@ -55,18 +55,19 @@ TestCase test_cases[] = {
     // this
     {"return this.true()", {RETURN, THIS, DOT, TRUE, LEFT_PAREN, RIGHT_PAREN}, 6},
     // numbers
-    {"return 23232.2323", {RETURN, NUMBER}, 2},
-    {"return 23", {RETURN, NUMBER}, 2},
-    {"return -23", {RETURN, MINUS, NUMBER}, 3},
-    {"2323 -23", {NUMBER, MINUS, NUMBER}, 3},
-    {"2 .23", {NUMBER, DOT, NUMBER}, 3}, // not a valid number
+    {"return 23232.2323", {RETURN, DOUBLE}, 2},
+    {"return 23", {RETURN, INTEGER}, 2},
+    {"return -23", {RETURN, MINUS, INTEGER}, 3},
+    {"2323 -23", {INTEGER, MINUS, INTEGER}, 3},
+    {"2 .23", {INTEGER, DOT, INTEGER}, 3}, // not a valid number
+    {"2.", {INTEGER, DOT}, 2},
     // {"2_23", {NUMBER}, 1}, // TODO add support of underscores for numbers ?
 
 
     // comments
-    {"fn // comment return 2 + 2\n 222", {FN, SLASH_SLASH, NUMBER}, 3},
-    {"fn // comment // inside another one return 2 + 2\n 222", {FN, SLASH_SLASH, NUMBER}, 3},
-    {"fn // comment\n//\n//\n// //  2 + 2\n 222", {FN, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, NUMBER}, 6},
+    {"fn // comment return 2 + 2\n 222", {FN, SLASH_SLASH, INTEGER}, 3},
+    {"fn // comment // inside another one return 2 + 2\n 222", {FN, SLASH_SLASH, INTEGER}, 3},
+    {"fn // comment\n//\n//\n// //  2 + 2\n 222", {FN, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, INTEGER}, 6},
 };
 
 int amount = sizeof(test_cases) / sizeof(TestCase);

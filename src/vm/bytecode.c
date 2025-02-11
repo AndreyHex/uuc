@@ -73,7 +73,9 @@ void slice_print(Slice *slice) {
         printf("%4d | ", i);
         if(code == OP_CONSTANT) {
             uint8_t index = slice->codes[i + 1];
-            printf("%3d:%s = %d:%f", code, opcode_name(code), index, slice->constants.head[index]);
+            Value v = slice->constants.head[index];
+            printf("%3d:%s = %d:", code, opcode_name(code), index);
+            type_print(v);
             i++;
         } else if(code == OP_CONSTANT_16) {
             LOG_ERROR("Unsupported index constant length: 16!\n");
