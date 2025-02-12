@@ -48,6 +48,10 @@ TestResults run_parser_test(int argc, const char *argv[]) {
                            "!1/!2*!3/-4*-5;");
     parser_test_case(&res, "( + 1 2.00 )", 
                            "1+2.0;");
+    parser_test_case(&res, "( == ( ! true ) false )", 
+                           "!true==false;");
+    parser_test_case(&res, "( == ( + 2 2 ) 3 )", 
+                           "2+2==3;");
     return res;
 }
 

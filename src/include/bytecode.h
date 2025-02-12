@@ -20,6 +20,12 @@ typedef enum {
     OP_MULTIPLY,
     OP_DIVIDE,
 
+    OP_EQ,
+    OP_NE,
+    OP_GT,
+    OP_GTE,
+    OP_LT,
+    OP_LTE,
 
     OP_RETURN,
 } OpCode;

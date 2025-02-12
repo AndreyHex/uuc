@@ -4,7 +4,7 @@
 #include <stdlib.h>
 #include <string.h>
 
-char opcode_op_char(OpCode opcode);
+const char *opcode_op_char(OpCode opcode);
 
 // create string epression in s-notation (polish) for testing puproses
 // expecting single expression in slice
@@ -31,18 +31,24 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
                 default: break;
             }
             s_size++;
-        } else if (code >= OP_ADD && code <= OP_DIVIDE) {
+        } else if(code == OP_TRUE || code == OP_FALSE) {
+            sprintf(&stack[s_size * buf_s], "%s", code == OP_TRUE ? "true" : "false");
+            s_size++;
+        } else if(code == OP_NULL) {
+            sprintf(&stack[s_size * buf_s], "%s", "null");
+            s_size++;
+        } else if(code >= OP_ADD && code <= OP_LTE) {
             s_size--;
             char *a = &stack[s_size * buf_s];
             s_size--;
             char *b = &stack[s_size * buf_s];
-            sprintf(bb, "( %c %s %s )", opcode_op_char(code), b, a);
+            sprintf(bb, "( %s %s %s )", opcode_op_char(code), b, a);
             memcpy(&stack[s_size * buf_s], bb, buf_s);
             s_size++;
         } else if (code >= OP_NEGATE && code <= OP_NOT) {
             s_size--;
             char *a = &stack[s_size * buf_s];
-            sprintf(bb, "( %c %s )", opcode_op_char(code), a);
+            sprintf(bb, "( %s %s )", opcode_op_char(code), a);
             memcpy(&stack[s_size * buf_s], bb, buf_s);
             s_size++;
         }
@@ -51,14 +57,20 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
     free(stack);
 }
 
-char opcode_op_char(OpCode opcode) {
+const char *opcode_op_char(OpCode opcode) {
     switch(opcode) {
-        case OP_ADD: return '+';
-        case OP_SUBSTRACT: return '-';
-        case OP_MULTIPLY: return '*';
-        case OP_DIVIDE: return '/';
-        case OP_NOT: return '!';
-        case OP_NEGATE: return '-';
-        default: return 'e';
+        case OP_ADD: return "+";
+        case OP_SUBSTRACT: return "-";
+        case OP_MULTIPLY: return "*";
+        case OP_DIVIDE: return "/";
+        case OP_NOT: return "!";
+        case OP_NEGATE: return "-";
+        case OP_EQ: return "==";
+        case OP_NE: return "!=";
+        case OP_GT: return ">";
+        case OP_GTE: return ">=";
+        case OP_LT: return "<";
+        case OP_LTE: return "<=";
+        default: return "e";
     }
 }

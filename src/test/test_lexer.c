@@ -1,6 +1,6 @@
 #include "../include/lexer.h"
 #include "uuc_test.h"
-#include "lexer_test.h"
+#include "test_lexer.h"
 #include <string.h>
 #include <stdio.h>
 
@@ -37,6 +37,9 @@ TestCase test_cases[] = {
     {"var tru\ne", {VAR, IDENTIFIER, IDENTIFIER}, 3},
     // true
     {"var _123 = true", {VAR, IDENTIFIER, EQUAL, TRUE}, 4},
+    {"!false!=true", {BANG, FALSE, BANG_EQUAL, TRUE}, 4},
+    {"!true!=false;", {BANG, TRUE, BANG_EQUAL, FALSE, SEMICOLON}, 5},
+    {"true>true", {TRUE, GREATER, TRUE}, 3},
     {"var _123 = true_fake", {VAR, IDENTIFIER, EQUAL, IDENTIFIER}, 4},
     // false
     {"var _123 = false", {VAR, IDENTIFIER, EQUAL, FALSE}, 4},
@@ -85,6 +88,7 @@ TestResults run_lexer_test(int argc, const char *argv[]) {
 }
 
 TestStatus lexer_test_case(char *code, TokenType expected[], int e_size) {
+    printf("Test scan string: '%s'\n", code);
     Tokens *t = scan(code, strlen(code));
     if (t->size != e_size + 1) {
         printf("\033[31mFAIL:\033[m Expected size does not equal scanned size. Expected: %d "

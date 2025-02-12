@@ -106,6 +106,12 @@ void parse_binary(ParserContext *context) {
         case MINUS: emit_opcode(OP_SUBSTRACT, context); break;
         case STAR: emit_opcode(OP_MULTIPLY, context); break;
         case SLASH: emit_opcode(OP_DIVIDE, context); break;
+        case EQUAL_EQUAL: emit_opcode(OP_EQ, context); break;
+        case BANG_EQUAL: emit_opcode(OP_NE, context); break;
+        case GREATER: emit_opcode(OP_GT, context); break;
+        case GREATER_EQUAL: emit_opcode(OP_GTE, context); break;
+        case LESS: emit_opcode(OP_LT, context); break;
+        case LESS_EQUAL: emit_opcode(OP_LTE, context); break;
         default: LOG_ERROR("Unsupported binary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }

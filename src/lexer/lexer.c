@@ -22,6 +22,8 @@ Rule rules[] = {
     {'-', MINUS, 2, {{'-', MINUS_MINUS}, {'=', MINUS_EQUAL}}},
     {'=', EQUAL, 1, {{'=', EQUAL_EQUAL}}},
     {'!', BANG, 1, {{'=', BANG_EQUAL}}},
+    {'>', GREATER, 1, {{'=', GREATER_EQUAL}}},
+    {'<', LESS, 1, {{'=', LESS_EQUAL}}},
     {'&', AND, 2, {{'&', AND_AND}, {'=', AND_EQUAL}}},
     {'|', OR, 2, {{'|', OR_OR}, {'=', OR_EQUAL}}},
     {'*', STAR, 1, {{'=', STAR_EQUAL}}},

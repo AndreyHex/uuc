@@ -25,7 +25,7 @@ void slice_push_code(OpCode code, Slice *slice) {
     if(slice->size == slice->capacity) {
         uint32_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);
-        INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
+        slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
     }
     slice->codes[slice->size] = code;
     slice->size++;
@@ -35,7 +35,7 @@ void slice_push_constant(Value value, Slice *slice) {
     if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
         uint32_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);
-        INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
+        slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
     }
     uint64_t index = list_push(&slice->constants, value);
     OpCode code;
@@ -104,10 +104,17 @@ const char *op_code_names[] = {
     "OP_MULTIPLY",
     "OP_DIVIDE",
 
+    "OP_EQ",
+    "OP_NE",
+    "OP_GT",
+    "OP_GTE",
+    "OP_LT",
+    "OP_LTE",
+
     "OP_RETURN",
 };
 
 const char* opcode_name(OpCode opcode) {
-    if(opcode > 12) return "UNKNOWN OP CODE";
+    if(opcode > 16) return "UNKNOWN OP CODE";
     return op_code_names[opcode];
 }

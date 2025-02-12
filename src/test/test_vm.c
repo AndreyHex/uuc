@@ -24,6 +24,26 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(-8), "2-4-6;"));
     add_result(&r, run_vm_test_case(INT_VAL(4), "2*2*2/2;"));
 
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "2==2;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "2==2.1;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "2==3;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "2!=3;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "2!=2;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "true!=false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "!true!=false;"));
+
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "true>true;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "false>false;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "true>false;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "true>=false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "true<false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "true<=false;"));
+
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "2<=2.4;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "2<=2;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "3>=4;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "3>4;"));
+
     add_result(&r, run_vm_test_case(DOUBLE_VAL(0.25), "1/4.0;"));
     add_result(&r, run_vm_test_case(DOUBLE_VAL(4.0), "1*4.0;"));
     add_result(&r, run_vm_test_case(DOUBLE_VAL(3.0), "1.0+2;"));
@@ -49,6 +69,13 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "!(null);"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "-null;"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2+-null;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2==null;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2==true;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "null==true;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "true>2;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "true<=2;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "null<=2;"));
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "null<=(2*2+2);"));
 
     return r;
 }
@@ -63,10 +90,11 @@ TestResult run_vm_test_case(Value expecting, char *code) {
     Value r = stack_peek(&vm.value_stack);
     printf("Test execute expression: '%s' => ", code);
     type_print(r);
-    printf("\n");
     if(assert_value(expecting, r)) {
+        printf(" -- invalid\n");
         return (TestResult){ .result = FAIL };
     }
+    printf(" -- valid\n");
     return (TestResult){ .result = PASS };
 }
 

@@ -2,6 +2,7 @@
 #include "../include/vm.h"
 #include <stdint.h>
 #include <stdio.h>
+#include "uuc_vm_operations.h"
 
 ExeResult vm_tick(VM *vm);
 void vm_advance(VM *vm);
@@ -12,6 +13,7 @@ Value uuc_op_add(Value right, Value left, ExeResult *r);
 Value uuc_op_substract(Value right, Value left, ExeResult *r);
 Value uuc_op_divide(Value divident, Value divisor, ExeResult *r);
 Value uuc_op_multiply(Value right, Value left, ExeResult *r);
+Value uuc_compare_eq(Value right, Value left, ExeResult *r);
 
 VM vm_init(Slice slice) {
     VM vm = {
@@ -36,6 +38,14 @@ void vm_advance(VM *vm) {
     vm->ip++;
     vm->ii++;
 }
+
+#define execute_operation(fun_name) \
+do { \
+Value b = stack_pop(stack); \
+if(uuc_null_check(&b)) return UUC_RUNTIME_ERROR; \
+Value a = stack_pop(stack); \
+if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR; \
+stack_push(stack, fun_name(a, b, &r)); } while(0);
 
 ExeResult vm_tick(VM *vm) {
     uint8_t ip = *vm->ip;
@@ -71,50 +81,21 @@ ExeResult vm_tick(VM *vm) {
             stack_push(stack, type_int(-(v.as.uuc_int)));
             break;
         }
-        case OP_ADD: {
-            Value b = stack_pop(stack);
-            if(uuc_null_check(&b)) return UUC_RUNTIME_ERROR;
-            Value a = stack_pop(stack);
-            if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR;
-            stack_push(stack, uuc_op_add(a, b, &r));
-            break;
-        }
-        case OP_SUBSTRACT: {
-            Value b = stack_pop(stack);
-            if(uuc_null_check(&b)) return UUC_RUNTIME_ERROR;
-            Value a = stack_pop(stack);
-            if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR;
-            stack_push(stack, uuc_op_substract(a, b, &r));
-            break;
-        }
-        case OP_MULTIPLY: {
-            Value b = stack_pop(stack);
-            if(uuc_null_check(&b)) return UUC_RUNTIME_ERROR;
-            Value a = stack_pop(stack);
-            if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR;
-            stack_push(stack, uuc_op_multiply(a, b, &r));
-            break;
-        }
-        case OP_DIVIDE: {
-            Value b = stack_pop(stack);
-            if(uuc_null_check(&b)) return UUC_RUNTIME_ERROR;
-            Value a = stack_pop(stack);
-            if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR;
-            stack_push(stack, uuc_op_divide(a, b, &r));
-            break;
-        }
-        case OP_TRUE: {
-            stack_push(stack, type_bool(1)); 
-            break;
-        }
-        case OP_FALSE: {
-            stack_push(stack, type_bool(0)); 
-            break;
-        }
-        case OP_NULL: {
-            stack_push(stack, type_null()); 
-            break;
-        }
+        case OP_ADD: execute_operation(uuc_op_add) break;
+        case OP_SUBSTRACT: execute_operation(uuc_op_substract) break;
+        case OP_MULTIPLY: execute_operation(uuc_op_multiply) break;
+        case OP_DIVIDE: execute_operation(uuc_op_divide) break;
+        case OP_TRUE: stack_push(stack, type_bool(1)); break;
+        case OP_FALSE: stack_push(stack, type_bool(0)); break;
+        case OP_NULL: stack_push(stack, type_null()); break;
+
+        case OP_EQ: execute_operation(uuc_compare_eq) break;
+        case OP_NE: execute_operation(uuc_compare_ne) break;
+        case OP_GT: execute_operation(uuc_compare_gt) break;
+        case OP_GTE: execute_operation(uuc_compare_gte) break;
+        case OP_LT: execute_operation(uuc_compare_lt) break;
+        case OP_LTE: execute_operation(uuc_compare_lte) break;
+
         case OP_RETURN: {
             printf("OP_RETURN\n");
             // printf("%f\n", stack_pop(stack));
@@ -127,6 +108,7 @@ ExeResult vm_tick(VM *vm) {
     #endif
     return r;
 }
+#undef execute_operation
 
 // plz send help
 Value uuc_op_add(Value right, Value left, ExeResult *r) {
@@ -219,7 +201,7 @@ Value uuc_op_divide(Value divident, Value divisor, ExeResult *r) {
         return type_null();
     }
     if(divident.type == TYPE_INT && divisor.type == TYPE_INT) {
-        long r = ((double)divident.as.uuc_int) / (double)divisor.as.uuc_int;
+        long r = divident.as.uuc_int / divisor.as.uuc_int;
         return (Value){ .type = TYPE_INT, .as = { .uuc_int = r } };
     } else if(divident.type == TYPE_DOUBLE && divisor.type == TYPE_DOUBLE) {
         double r = divident.as.uuc_double / divisor.as.uuc_double;
