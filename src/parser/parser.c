@@ -66,10 +66,10 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
         parse_number(c, context);
         parser_advance(context);
     } else if (c.type == TRUE || c.type == FALSE) {
-        parse_bool(c, context);
+        emit_opcode(c.type == TRUE ? OP_TRUE : OP_FALSE , context);
         parser_advance(context);
     } else if (c.type == TOKEN_NULL) {
-        emit_constant(type_null(), context);
+        emit_opcode(OP_NULL, context);
         parser_advance(context);
     } else if (c.type == LEFT_PAREN) {
         parse_grouping(context);

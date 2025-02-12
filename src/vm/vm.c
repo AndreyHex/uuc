@@ -103,6 +103,18 @@ ExeResult vm_tick(VM *vm) {
             stack_push(stack, uuc_op_divide(a, b, &r));
             break;
         }
+        case OP_TRUE: {
+            stack_push(stack, type_bool(1)); 
+            break;
+        }
+        case OP_FALSE: {
+            stack_push(stack, type_bool(0)); 
+            break;
+        }
+        case OP_NULL: {
+            stack_push(stack, type_null()); 
+            break;
+        }
         case OP_RETURN: {
             printf("OP_RETURN\n");
             // printf("%f\n", stack_pop(stack));

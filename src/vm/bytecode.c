@@ -87,18 +87,27 @@ void slice_print(Slice *slice) {
     printf("=================================\n");
 }
 
-// TODO: change to array or smth
+
+const char *op_code_names[] = {
+    "OP_CONSTANT",
+    "OP_CONSTANT_16",
+
+    "OP_TRUE",
+    "OP_FALSE",
+    "OP_NULL",
+
+    "OP_NEGATE",
+    "OP_NOT",
+
+    "OP_ADD",
+    "OP_SUBSTRACT",
+    "OP_MULTIPLY",
+    "OP_DIVIDE",
+
+    "OP_RETURN",
+};
+
 const char* opcode_name(OpCode opcode) {
-    switch(opcode) {
-        case OP_NOT: return "OP_NOT";
-        case OP_NEGATE: return "OP_NEGATE";
-
-        case OP_ADD: return "OP_ADD";
-        case OP_SUBSTRACT: return "OP_SUBSTRACT";
-        case OP_MULTIPLY: return "OP_MULTIPLY";
-        case OP_DIVIDE: return "OP_DIVIDE";
-
-        case OP_CONSTANT: return "OP_CONSTANT";
-        default: return "UNKNOWN OP CODE";
-    }
+    if(opcode > 12) return "UNKNOWN OP CODE";
+    return op_code_names[opcode];
 }

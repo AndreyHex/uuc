@@ -27,6 +27,10 @@ static inline Value type_int(int v) {
     return (Value){ .type = TYPE_INT, .as = { .uuc_int = v } };
 }
 
+static inline Value type_bool(int v) {
+    return (Value){ .type = TYPE_BOOL, .as = { .uuc_bool = v } };
+}
+
 const char *uuc_type_str(UucType type);
 
 static inline void type_print(Value val) {
