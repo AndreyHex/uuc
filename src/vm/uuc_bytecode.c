@@ -1,6 +1,6 @@
-#include "../include/bytecode.h"
-#include "../include/log.h"
-#include "../include/memory.h"
+#include "../include/uuc_bytecode.h"
+#include "../include/uuc_log.h"
+#include "../include/uuc_memory.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>

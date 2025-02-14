@@ -1,8 +1,12 @@
 #ifndef lexer_h
 #define lexer_h
 
-#include "result.h"
-#include "../include/token.h"
+#include "uuc_token.h"
+
+typedef enum {
+    SOME,
+    NONE,
+} ResultType;
 
 typedef struct {
     char *input;

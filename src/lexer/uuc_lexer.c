@@ -1,7 +1,6 @@
-#include "../include/lexer.h"
-#include "../include/memory.h"
-#include "../include/result.h"
-#include "../include/log.h"
+#include "../include/uuc_lexer.h"
+#include "../include/uuc_memory.h"
+#include "../include/uuc_log.h"
 #include <stdlib.h>
 #include <strings.h>
 

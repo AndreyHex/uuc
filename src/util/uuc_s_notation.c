@@ -1,5 +1,5 @@
-#include "../include/s_notation.h"
-#include "../include/bytecode.h"
+#include "../include/uuc_s_notation.h"
+#include "../include/uuc_bytecode.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

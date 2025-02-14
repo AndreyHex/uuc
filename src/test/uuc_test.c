@@ -1,7 +1,7 @@
 #include "uuc_test.h"
 #include <stdlib.h>
-#include "../include/memory.h"
-#include "../include/log.h"
+#include "../include/uuc_memory.h"
+#include "../include/uuc_log.h"
 
 TestResults init_test_results(uint64_t initial_capacity) {
     void *ptr = malloc(initial_capacity * sizeof(TestResult));

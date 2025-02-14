@@ -1,9 +1,9 @@
 #include <stdint.h>
 #include <stdio.h>
-#include "include/collection.h"
+#include "include/uuc_collection.h"
 #include "include/uuc_type.h"
-#include "include/vm.h"
-#include "include/parser.h"
+#include "include/uuc_vm.h"
+#include "include/uuc_parser.h"
 
 int main(int argc, const char *argv[]) {
     Slice slice = parse_code("\"a\"+\"b\"+\"c\";");

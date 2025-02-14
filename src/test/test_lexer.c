@@ -1,4 +1,4 @@
-#include "../include/lexer.h"
+#include "../include/uuc_lexer.h"
 #include "uuc_test.h"
 #include "test_lexer.h"
 #include <string.h>

@@ -2,7 +2,7 @@
 #define uuc_bytecode_h
 
 #include <stdint.h>
-#include "collection.h"
+#include "uuc_collection.h"
 
 typedef enum {
     OP_CONSTANT,

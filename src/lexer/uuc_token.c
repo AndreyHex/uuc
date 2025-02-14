@@ -1,4 +1,4 @@
-#include "../include/token.h"
+#include "../include/uuc_token.h"
 
 const char *uuc_token_names[] = {
     "TOKEN_LEFT_PAREN",

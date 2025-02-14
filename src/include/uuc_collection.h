@@ -1,7 +1,7 @@
 #ifndef uuc_value_stack_h
 #define uuc_value_stack_h
 
-#include "log.h"
+#include "uuc_log.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include "uuc_type.h"

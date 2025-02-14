@@ -1,8 +1,8 @@
 #ifndef uuc_precedence_h
 #define uuc_precedence_h
 
-#include "log.h"
-#include "token.h"
+#include "uuc_log.h"
+#include "uuc_token.h"
 #include <stdint.h>
 
 uint8_t precedence(TokenType token_type) {

@@ -1,8 +1,8 @@
-#include "../include/token.h"
-#include "../include/parser.h"
-#include "../include/lexer.h"
-#include "../include/bytecode.h"
-#include "../include/precedence.h"
+#include "../include/uuc_token.h"
+#include "../include/uuc_parser.h"
+#include "../include/uuc_lexer.h"
+#include "../include/uuc_bytecode.h"
+#include "../include/uuc_precedence.h"
 #include "../include/uuc_string.h"
 #include <stdint.h>
 #include <stdlib.h>

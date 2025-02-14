@@ -1,5 +1,5 @@
-#include "../include/collection.h"
-#include "../include/memory.h"
+#include "../include/uuc_collection.h"
+#include "../include/uuc_memory.h"
 #include <stdint.h>
 #include <stdlib.h>
 

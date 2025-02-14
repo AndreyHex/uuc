@@ -1,6 +1,6 @@
 #include "../include/uuc_string.h"
-#include "../include/bytecode.h"
-#include "../include/vm.h"
+#include "../include/uuc_bytecode.h"
+#include "../include/uuc_vm.h"
 #include <stdint.h>
 #include <stdio.h>
 

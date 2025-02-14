@@ -2,7 +2,7 @@
 #define uuc_vm_operations_h
 
 #include "../include/uuc_type.h"
-#include "../include/vm.h"
+#include "../include/uuc_vm.h"
 
 #define CREATE_TWOARG_FUN_DEF(op_name, cmp) \
 Value uuc_ ## op_name(Value left, Value right, ExeResult *r) { \

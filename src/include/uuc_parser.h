@@ -1,8 +1,8 @@
 #ifndef uuc_parser_h
 #define uuc_parser_h
 
-#include "lexer.h"
-#include "bytecode.h"
+#include "uuc_lexer.h"
+#include "uuc_bytecode.h"
 #include <stdint.h>
 
 typedef struct {
