@@ -53,7 +53,7 @@ TestResults run_parser_test(int argc, const char *argv[]) {
     parser_test_case(&res, "( == ( + 2 2 ) 3 )", 
                            "2+2==3;");
     parser_test_case(&res, "( + string string )", 
-                           "string + string;");
+                           "\"string\" + \"string\";");
     return res;
 }
 

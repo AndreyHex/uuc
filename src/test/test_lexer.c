@@ -11,67 +11,68 @@ typedef struct {
 } TestCase;
 
 TestCase test_cases[] = {
-    {"++--", {PLUS_PLUS, MINUS_MINUS}, 2},
-    {"+-", {PLUS, MINUS}, 2},
-    {"(())", {LEFT_PAREN, LEFT_PAREN, RIGHT_PAREN, RIGHT_PAREN}, 4},
-    {"({})", {LEFT_PAREN, LEFT_BRACE, RIGHT_BRACE, RIGHT_PAREN}, 4},
-    {"&&&", {AND_AND, AND}, 2},
-    {"&&=&", {AND_AND, EQUAL, AND}, 3},
-    {"&&=&=", {AND_AND, EQUAL, AND_EQUAL}, 3},
-    {"..+-/=", {DOT, DOT, PLUS, MINUS, SLASH_EQUAL}, 5},
-    {"..//+-/=\n+", {DOT, DOT, SLASH_SLASH, PLUS}, 4},
-    {"\"string\"", {STRING}, 1},
-    {"\"st\\\"ring\"", {STRING}, 1},
-    {"\"st\\\"ring\"+\"!\"+\".\"", {STRING, PLUS, STRING, PLUS, STRING}, 5},
-    {"(", {LEFT_PAREN}, 1},
+    {"++--", {TOKEN_PLUS_PLUS, TOKEN_MINUS_MINUS}, 2},
+    {"+-", {TOKEN_PLUS, TOKEN_MINUS}, 2},
+    {"(())", {TOKEN_LPAREN, TOKEN_LPAREN, TOKEN_RPAREN, TOKEN_RPAREN}, 4},
+    {"({})", {TOKEN_LPAREN, TOKEN_LBRACE, TOKEN_RBRACE, TOKEN_RPAREN}, 4},
+    {"&&&", {TOKEN_AND_AND, TOKEN_AND}, 2},
+    {"&&=&", {TOKEN_AND_AND, TOKEN_EQUAL, TOKEN_AND}, 3},
+    {"&&=&=", {TOKEN_AND_AND, TOKEN_EQUAL, TOKEN_AND_EQUAL}, 3},
+    {"..+-/=", {TOKEN_DOT, TOKEN_DOT, TOKEN_PLUS, TOKEN_MINUS, TOKEN_SLASH_EQUAL}, 5},
+    {"..//+-/=\n+", {TOKEN_DOT, TOKEN_DOT, TOKEN_SLASH_SLASH, TOKEN_PLUS}, 4},
+    {"\"string\"", {TOKEN_STRING}, 1},
+    {"\"st\\\"ring\"", {TOKEN_STRING}, 1},
+    {"\"st\\\"ring\"+\"!\"+\".\"", {TOKEN_STRING, TOKEN_PLUS, TOKEN_STRING, TOKEN_PLUS, TOKEN_STRING}, 5},
+    {"(", {TOKEN_LPAREN}, 1},
 
     // var and identifiers
-    {"var identifier =", {VAR, IDENTIFIER, EQUAL}, 3},
-    {"var ident111ifier", {VAR, IDENTIFIER}, 2},
-    {"var _", {VAR, IDENTIFIER}, 2},
-    {"var _123", {VAR, IDENTIFIER}, 2},
-    {"var _1dSASSds_ds23", {VAR, IDENTIFIER}, 2},
-    {"var __1_23", {VAR, IDENTIFIER}, 2},
-    {"var_123 _", {IDENTIFIER, IDENTIFIER}, 2},
+    {"var identifier =", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL}, 3},
+    {"identifier + identifir;", {TOKEN_IDENTIFIER, TOKEN_PLUS, TOKEN_IDENTIFIER, TOKEN_SEMICOLON}, 4},
+    {"var ident111ifier", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var _", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var _123", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var _1dSASSds_ds23", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var __1_23", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var_123 _", {TOKEN_IDENTIFIER, TOKEN_IDENTIFIER}, 2},
     // keyword is cut
-    {"var tru", {VAR, IDENTIFIER}, 2},
-    {"var tru\ne", {VAR, IDENTIFIER, IDENTIFIER}, 3},
+    {"var tru", {TOKEN_VAR, TOKEN_IDENTIFIER}, 2},
+    {"var tru\ne", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_IDENTIFIER}, 3},
     // true
-    {"var _123 = true", {VAR, IDENTIFIER, EQUAL, TRUE}, 4},
-    {"!false!=true", {BANG, FALSE, BANG_EQUAL, TRUE}, 4},
-    {"!true!=false;", {BANG, TRUE, BANG_EQUAL, FALSE, SEMICOLON}, 5},
-    {"true>true", {TRUE, GREATER, TRUE}, 3},
-    {"var _123 = true_fake", {VAR, IDENTIFIER, EQUAL, IDENTIFIER}, 4},
+    {"var _123 = true", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL, TOKEN_TRUE}, 4},
+    {"!false!=true", {TOKEN_BANG, TOKEN_FALSE, TOKEN_BANG_EQUAL, TOKEN_TRUE}, 4},
+    {"!true!=false;", {TOKEN_BANG, TOKEN_TRUE, TOKEN_BANG_EQUAL, TOKEN_FALSE, TOKEN_SEMICOLON}, 5},
+    {"true>true", {TOKEN_TRUE, TOKEN_GREATER, TOKEN_TRUE}, 3},
+    {"var _123 = true_fake", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL, TOKEN_IDENTIFIER}, 4},
     // false
-    {"var _123 = false", {VAR, IDENTIFIER, EQUAL, FALSE}, 4},
-    {"var _123 = true_fake", {VAR, IDENTIFIER, EQUAL, IDENTIFIER}, 4},
+    {"var _123 = false", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL, TOKEN_FALSE}, 4},
+    {"var _123 = true_fake", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL, TOKEN_IDENTIFIER}, 4},
     // fn
-    {"fn \nfunction() ", {FN, IDENTIFIER, LEFT_PAREN, RIGHT_PAREN}, 4},
+    {"fn \nfunction() ", {TOKEN_FN, TOKEN_IDENTIFIER, TOKEN_LPAREN, TOKEN_RPAREN}, 4},
     // while
-    {"while(true)", {WHILE, LEFT_PAREN, TRUE, RIGHT_PAREN}, 4},
+    {"while(true)", {TOKEN_WHILE, TOKEN_LPAREN, TOKEN_TRUE, TOKEN_RPAREN}, 4},
     // for 
-    {"for(true)", {FOR, LEFT_PAREN, TRUE, RIGHT_PAREN}, 4},
+    {"for(true)", {TOKEN_FOR, TOKEN_LPAREN, TOKEN_TRUE, TOKEN_RPAREN}, 4},
     // if else
-    {"if(true)", {IF, LEFT_PAREN, TRUE, RIGHT_PAREN}, 4},
-    {"else return;", {ELSE, RETURN, SEMICOLON}, 3},
+    {"if(true)", {TOKEN_IF, TOKEN_LPAREN, TOKEN_TRUE, TOKEN_RPAREN}, 4},
+    {"else return;", {TOKEN_ELSE, TOKEN_RETURN, TOKEN_SEMICOLON}, 3},
     // class
-    {"class MyClass", {CLASS, IDENTIFIER}, 2},
+    {"class MyClass", {TOKEN_CLASS, TOKEN_IDENTIFIER}, 2},
     // this
-    {"return this.true()", {RETURN, THIS, DOT, TRUE, LEFT_PAREN, RIGHT_PAREN}, 6},
+    {"return this.true()", {TOKEN_RETURN, TOKEN_THIS, TOKEN_DOT, TOKEN_TRUE, TOKEN_LPAREN, TOKEN_RPAREN}, 6},
     // numbers
-    {"return 23232.2323", {RETURN, DOUBLE}, 2},
-    {"return 23", {RETURN, INTEGER}, 2},
-    {"return -23", {RETURN, MINUS, INTEGER}, 3},
-    {"2323 -23", {INTEGER, MINUS, INTEGER}, 3},
-    {"2 .23", {INTEGER, DOT, INTEGER}, 3}, // not a valid number
-    {"2.", {INTEGER, DOT}, 2},
+    {"return 23232.2323", {TOKEN_RETURN, TOKEN_DOUBLE}, 2},
+    {"return 23", {TOKEN_RETURN, TOKEN_INTEGER}, 2},
+    {"return -23", {TOKEN_RETURN, TOKEN_MINUS, TOKEN_INTEGER}, 3},
+    {"2323 -23", {TOKEN_INTEGER, TOKEN_MINUS, TOKEN_INTEGER}, 3},
+    {"2 .23", {TOKEN_INTEGER, TOKEN_DOT, TOKEN_INTEGER}, 3}, // not a valid number
+    {"2.", {TOKEN_INTEGER, TOKEN_DOT}, 2},
     // {"2_23", {NUMBER}, 1}, // TODO add support of underscores for numbers ?
 
 
     // comments
-    {"fn // comment return 2 + 2\n 222", {FN, SLASH_SLASH, INTEGER}, 3},
-    {"fn // comment // inside another one return 2 + 2\n 222", {FN, SLASH_SLASH, INTEGER}, 3},
-    {"fn // comment\n//\n//\n// //  2 + 2\n 222", {FN, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, SLASH_SLASH, INTEGER}, 6},
+    {"fn // comment return 2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 3},
+    {"fn // comment // inside another one return 2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 3},
+    {"fn // comment\n//\n//\n// //  2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 6},
 };
 
 int amount = sizeof(test_cases) / sizeof(TestCase);

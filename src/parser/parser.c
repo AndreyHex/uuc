@@ -55,7 +55,7 @@ Slice parse_code(char *code) {
 
 void parse_expression_statement(ParserContext *context) {
     parse_expression(context);
-    parser_consume(SEMICOLON, context);
+    parser_consume(TOKEN_SEMICOLON, context);
 }
 
 void parse_expression(ParserContext *context) {
@@ -64,19 +64,19 @@ void parse_expression(ParserContext *context) {
 
 void parse_precedence(uint8_t min_p, ParserContext *context) {
     Token c = parser_peek(context);
-    if(c.type == INTEGER || c.type == DOUBLE) {
+    if(c.type == TOKEN_INTEGER || c.type == TOKEN_DOUBLE) {
         parse_number(c, context);
         parser_advance(context);
-    } else if (c.type == STRING) {
+    } else if (c.type == TOKEN_STRING) {
         parse_string(c, context);
         parser_advance(context);
-    } else if (c.type == TRUE || c.type == FALSE) {
-        emit_opcode(c.type == TRUE ? OP_TRUE : OP_FALSE , context);
+    } else if (c.type == TOKEN_TRUE || c.type == TOKEN_FALSE) {
+        emit_opcode(c.type == TOKEN_TRUE ? OP_TRUE : OP_FALSE , context);
         parser_advance(context);
     } else if (c.type == TOKEN_NULL) {
         emit_opcode(OP_NULL, context);
         parser_advance(context);
-    } else if (c.type == LEFT_PAREN) {
+    } else if (c.type == TOKEN_LPAREN) {
         parse_grouping(context);
     } else {
         parse_unary(context);
@@ -95,8 +95,8 @@ void parse_unary(ParserContext *context) {
     parser_advance(context);
     // prefix binding is stronger for '-' as example
     parse_precedence(precedence(op.type) + 6, context);     switch(op.type) {
-        case MINUS: emit_opcode(OP_NEGATE, context); break;
-        case BANG: emit_opcode(OP_NOT, context); break;
+        case TOKEN_MINUS: emit_opcode(OP_NEGATE, context); break;
+        case TOKEN_BANG: emit_opcode(OP_NOT, context); break;
         default: LOG_ERROR("Unsupported unary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }
@@ -107,24 +107,24 @@ void parse_binary(ParserContext *context) {
     parser_advance(context);
     parse_precedence(precedence(op.type), context);
     switch(op.type) {
-        case PLUS: emit_opcode(OP_ADD, context); break;
-        case MINUS: emit_opcode(OP_SUBSTRACT, context); break;
-        case STAR: emit_opcode(OP_MULTIPLY, context); break;
-        case SLASH: emit_opcode(OP_DIVIDE, context); break;
-        case EQUAL_EQUAL: emit_opcode(OP_EQ, context); break;
-        case BANG_EQUAL: emit_opcode(OP_NE, context); break;
-        case GREATER: emit_opcode(OP_GT, context); break;
-        case GREATER_EQUAL: emit_opcode(OP_GTE, context); break;
-        case LESS: emit_opcode(OP_LT, context); break;
-        case LESS_EQUAL: emit_opcode(OP_LTE, context); break;
+        case TOKEN_PLUS: emit_opcode(OP_ADD, context); break;
+        case TOKEN_MINUS: emit_opcode(OP_SUBSTRACT, context); break;
+        case TOKEN_STAR: emit_opcode(OP_MULTIPLY, context); break;
+        case TOKEN_SLASH: emit_opcode(OP_DIVIDE, context); break;
+        case TOKEN_EQUAL_EQUAL: emit_opcode(OP_EQ, context); break;
+        case TOKEN_BANG_EQUAL: emit_opcode(OP_NE, context); break;
+        case TOKEN_GREATER: emit_opcode(OP_GT, context); break;
+        case TOKEN_GREATER_EQUAL: emit_opcode(OP_GTE, context); break;
+        case TOKEN_LESS: emit_opcode(OP_LT, context); break;
+        case TOKEN_LESS_EQUAL: emit_opcode(OP_LTE, context); break;
         default: LOG_ERROR("Unsupported binary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }
 
 void parse_grouping(ParserContext *context) {
-    parser_consume(LEFT_PAREN, context);
+    parser_consume(TOKEN_LPAREN, context);
     parse_expression(context);
-    parser_consume(RIGHT_PAREN, context);
+    parser_consume(TOKEN_RPAREN, context);
 }
 
 void parser_advance(ParserContext *context) {
@@ -142,7 +142,7 @@ void parser_consume(TokenType token_type, ParserContext *context) {
 }
 
 void parse_number(Token token, ParserContext *context) {
-    if(token.type == INTEGER) {
+    if(token.type == TOKEN_INTEGER) {
         long val = strtol(token.start, NULL, 10);
         emit_constant((Value){ .type = TYPE_INT, .as = { .uuc_int = val } }, context);
     } else {
@@ -157,7 +157,7 @@ void parse_string(Token token, ParserContext *context) {
 }
 
 void parse_bool(Token token, ParserContext *context) {
-    if(token.type == TRUE) emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 1 } }, context);
+    if(token.type == TOKEN_TRUE) emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 1 } }, context);
     else emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 0 } }, context);
 }
 

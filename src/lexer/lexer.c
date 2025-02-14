@@ -18,24 +18,24 @@ typedef struct {
 } Rule;
 
 Rule rules[] = {
-    {'+', PLUS, 2, {{'+', PLUS_PLUS}, {'=', PLUS_EQUAL}}},
-    {'-', MINUS, 2, {{'-', MINUS_MINUS}, {'=', MINUS_EQUAL}}},
-    {'=', EQUAL, 1, {{'=', EQUAL_EQUAL}}},
-    {'!', BANG, 1, {{'=', BANG_EQUAL}}},
-    {'>', GREATER, 1, {{'=', GREATER_EQUAL}}},
-    {'<', LESS, 1, {{'=', LESS_EQUAL}}},
-    {'&', AND, 2, {{'&', AND_AND}, {'=', AND_EQUAL}}},
-    {'|', OR, 2, {{'|', OR_OR}, {'=', OR_EQUAL}}},
-    {'*', STAR, 1, {{'=', STAR_EQUAL}}},
-    {'/', SLASH, 2, {{'/', SLASH_SLASH}, {'=', SLASH_EQUAL}}},
-    {':', COLON, 0, {}},
-    {';', SEMICOLON, 0, {}},
-    {'.', DOT, 0, {}},
-    {',', COMMA, 0, {}},
-    {'(', LEFT_PAREN, 0, {}},
-    {')', RIGHT_PAREN, 0, {}},
-    {'{', LEFT_BRACE, 0, {}},
-    {'}', RIGHT_BRACE, 0, {}},
+    {'+', TOKEN_PLUS, 2, {{'+', TOKEN_PLUS_PLUS}, {'=', TOKEN_PLUS_EQUAL}}},
+    {'-', TOKEN_MINUS, 2, {{'-', TOKEN_MINUS_MINUS}, {'=', TOKEN_MINUS_EQUAL}}},
+    {'=', TOKEN_EQUAL, 1, {{'=', TOKEN_EQUAL_EQUAL}}},
+    {'!', TOKEN_BANG, 1, {{'=', TOKEN_BANG_EQUAL}}},
+    {'>', TOKEN_GREATER, 1, {{'=', TOKEN_GREATER_EQUAL}}},
+    {'<', TOKEN_LESS, 1, {{'=', TOKEN_LESS_EQUAL}}},
+    {'&', TOKEN_AND, 2, {{'&', TOKEN_AND_AND}, {'=', TOKEN_AND_EQUAL}}},
+    {'|', TOKEN_OR, 2, {{'|', TOKEN_OR_OR}, {'=', TOKEN_OR_EQUAL}}},
+    {'*', TOKEN_STAR, 1, {{'=', TOKEN_STAR_EQUAL}}},
+    {'/', TOKEN_SLASH, 2, {{'/', TOKEN_SLASH_SLASH}, {'=', TOKEN_SLASH_EQUAL}}},
+    {':', TOKEN_COLON, 0, {}},
+    {';', TOKEN_SEMICOLON, 0, {}},
+    {'.', TOKEN_DOT, 0, {}},
+    {',', TOKEN_COMMA, 0, {}},
+    {'(', TOKEN_LPAREN, 0, {}},
+    {')', TOKEN_RPAREN, 0, {}},
+    {'{', TOKEN_LBRACE, 0, {}},
+    {'}', TOKEN_RBRACE, 0, {}},
 };
 
 int rules_size = sizeof(rules) / sizeof(Rule);
@@ -92,7 +92,7 @@ Token next_token(LexerContext *ctx) {
 
     TokenResult simple_res = lex_simple(ctx);
     if (simple_res.result == SOME) {
-        if(simple_res.type == SLASH_SLASH) ctx->in_comment = 1;
+        if(simple_res.type == TOKEN_SLASH_SLASH) ctx->in_comment = 1;
         return create_token(ctx, simple_res.type, simple_res.size);
     }
 
@@ -105,12 +105,12 @@ Token next_token(LexerContext *ctx) {
     
     TokenResult rr = {0};
     switch (c) {
-        case 'v': rr = lex_something(ctx, "var", VAR); break;
+        case 'v': rr = lex_something(ctx, "var", TOKEN_VAR); break;
         case 't': { 
             char p = lexer_peek_next(ctx);
             switch(p) {
-                case 'r': rr = lex_something(ctx, "true", TRUE); break;
-                case 'h': rr = lex_something(ctx, "this", THIS); break;
+                case 'r': rr = lex_something(ctx, "true", TOKEN_TRUE); break;
+                case 'h': rr = lex_something(ctx, "this", TOKEN_THIS); break;
                 default: rr = lex_identifier(ctx, 0);
             }
             break; 
@@ -118,20 +118,20 @@ Token next_token(LexerContext *ctx) {
         case 'f': {
             char p = lexer_peek_next(ctx);
             switch(p) {
-                case 'n': rr = lex_something(ctx, "fn", FN); break;
-                case 'a': rr = lex_something(ctx, "false", FALSE); break;
-                case 'o': rr = lex_something(ctx, "for", FOR); break;
+                case 'n': rr = lex_something(ctx, "fn", TOKEN_FN); break;
+                case 'a': rr = lex_something(ctx, "false", TOKEN_FALSE); break;
+                case 'o': rr = lex_something(ctx, "for", TOKEN_FOR); break;
                 default: rr = lex_identifier(ctx, 0);
             };
             break;
         }
-        case 'i': rr = lex_something(ctx, "if", IF); break;
-        case 'e': rr = lex_something(ctx, "else", ELSE); break;
-        case 'w': rr = lex_something(ctx, "while", WHILE); break;
+        case 'i': rr = lex_something(ctx, "if", TOKEN_IF); break;
+        case 'e': rr = lex_something(ctx, "else", TOKEN_ELSE); break;
+        case 'w': rr = lex_something(ctx, "while", TOKEN_WHILE); break;
         case 'n': rr = lex_something(ctx, "null", TOKEN_NULL); break;
-        case 's': rr = lex_something(ctx, "super", SUPER); break;
-        case 'c': rr = lex_something(ctx, "class", CLASS); break;
-        case 'r': rr = lex_something(ctx, "return", RETURN); break;
+        case 's': rr = lex_something(ctx, "super", TOKEN_SUPER); break;
+        case 'c': rr = lex_something(ctx, "class", TOKEN_CLASS); break;
+        case 'r': rr = lex_something(ctx, "return", TOKEN_RETURN); break;
         default: rr = lex_identifier(ctx, 0);
     }
     if (rr.result == SOME) {
@@ -195,7 +195,7 @@ int is_end(LexerContext *ctx) {
 }
 
 TokenResult lex_string(LexerContext *ctx) {
-    TokenResult r = {.result = SOME, .size = 1, .type = STRING}; // initial 1 for open "
+    TokenResult r = {.result = SOME, .size = 1, .type = TOKEN_STRING}; // initial 1 for open "
     char c = lexer_peek(ctx);
     if(c != '"') {
         LOG_ERROR("BIG ERRORR\n");
@@ -223,9 +223,9 @@ TokenResult lex_string(LexerContext *ctx) {
 TokenResult lex_number(LexerContext *ctx) {
     char c = lexer_peek(ctx);
     int size = 0;
-    TokenType t = INTEGER;
+    TokenType t = TOKEN_INTEGER;
     while(is_digit(c) || (c == '.' && is_digit(lexer_peek_next(ctx)))) {
-        if(c == '.') t = DOUBLE;
+        if(c == '.') t = TOKEN_DOUBLE;
         size++;
         ctx->cursor++;
         c = lexer_peek(ctx);
@@ -254,7 +254,7 @@ TokenResult lex_something(LexerContext *ctx, char *name, TokenType candidate) {
 }
 
 TokenResult lex_identifier(LexerContext *ctx, int parsed) {
-    TokenResult r = { .result = SOME, .size = parsed, .type = IDENTIFIER};
+    TokenResult r = { .result = SOME, .size = parsed, .type = TOKEN_IDENTIFIER};
     int i = parsed;
     char c = lexer_peek(ctx);
     while (c == '_' || is_letter(c) || is_digit(c)) {
