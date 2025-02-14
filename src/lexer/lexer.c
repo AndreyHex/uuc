@@ -153,7 +153,7 @@ Token create_token(LexerContext *ctx, TokenType type, int size) {
         .pos = ctx->cursor - size,
         .length = size
     };
-    LOG_TRACE("Scanned token '%s' at %d:%d length %d\n", token_name(type), t.line, t.pos, t.length);
+    LOG_TRACE("Scanned token '%.*s' with type '%s' at %d:%d length %d\n", size, t.start, token_name(type), t.line, t.pos, t.length);
     return t;
 }
 

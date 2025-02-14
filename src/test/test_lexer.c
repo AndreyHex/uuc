@@ -22,6 +22,7 @@ TestCase test_cases[] = {
     {"..//+-/=\n+", {DOT, DOT, SLASH_SLASH, PLUS}, 4},
     {"\"string\"", {STRING}, 1},
     {"\"st\\\"ring\"", {STRING}, 1},
+    {"\"st\\\"ring\"+\"!\"+\".\"", {STRING, PLUS, STRING, PLUS, STRING}, 5},
     {"(", {LEFT_PAREN}, 1},
 
     // var and identifiers

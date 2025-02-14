@@ -12,14 +12,14 @@ ValueStack stack_init(uint32_t initial_capacity) {
     return (ValueStack){
         .head = p,
         .capacity = initial_capacity,
-        .size = 0
+        .size = 0,
     };
 }
 
 void stack_push(ValueStack *stack, Value val) {
     if(stack->size == stack->capacity) {
-        uint8_t new_cap = stack->capacity * 2;
-        LOG_TRACE("Growing stack size from %d to %d\n.", stack->size, new_cap);
+        size_t new_cap = stack->capacity * 2;
+        LOG_TRACE("Growing stack size from %d to %ld\n.", stack->size, new_cap);
         stack->head = INCREASE_ARRAY(Value, stack->head, stack->capacity, new_cap);
         stack->capacity = new_cap;
     }

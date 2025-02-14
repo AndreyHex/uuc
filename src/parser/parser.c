@@ -3,6 +3,7 @@
 #include "../include/lexer.h"
 #include "../include/bytecode.h"
 #include "../include/precedence.h"
+#include "../include/uuc_string.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -11,6 +12,7 @@ void parse_expression(ParserContext *context);
 void parse_unary(ParserContext *context);
 void parse_binary(ParserContext *context);
 void parse_number(Token token, ParserContext *context);
+void parse_string(Token token, ParserContext *context);
 void parse_bool(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
 void parse_precedence(uint8_t min_p, ParserContext *context);
@@ -64,6 +66,9 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
     Token c = parser_peek(context);
     if(c.type == INTEGER || c.type == DOUBLE) {
         parse_number(c, context);
+        parser_advance(context);
+    } else if (c.type == STRING) {
+        parse_string(c, context);
         parser_advance(context);
     } else if (c.type == TRUE || c.type == FALSE) {
         emit_opcode(c.type == TRUE ? OP_TRUE : OP_FALSE , context);
@@ -144,6 +149,11 @@ void parse_number(Token token, ParserContext *context) {
         double val = strtod(token.start, NULL);
         emit_constant((Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = val } }, context);
     }
+}
+
+void parse_string(Token token, ParserContext *context) {
+    UucString *str = uuc_copy_string(token.start + 1, token.length - 2);
+    emit_constant((Value){ .type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)str } }, context);
 }
 
 void parse_bool(Token token, ParserContext *context) {

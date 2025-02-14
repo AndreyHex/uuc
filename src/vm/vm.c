@@ -1,7 +1,9 @@
+#include "../include/uuc_string.h"
 #include "../include/bytecode.h"
 #include "../include/vm.h"
 #include <stdint.h>
 #include <stdio.h>
+
 #include "uuc_vm_operations.h"
 
 ExeResult vm_tick(VM *vm);
@@ -9,11 +11,13 @@ void vm_advance(VM *vm);
 int uuc_type_check(Value val, UucType type, const char *msg);
 int uuc_null_check(Value *val);
 int uuc_zero_division_check(Value divisor);
-Value uuc_op_add(Value right, Value left, ExeResult *r);
-Value uuc_op_substract(Value right, Value left, ExeResult *r);
+Value uuc_op_add(Value left, Value right, ExeResult *r);
+Value uuc_op_substract(Value left, Value right, ExeResult *r);
 Value uuc_op_divide(Value divident, Value divisor, ExeResult *r);
-Value uuc_op_multiply(Value right, Value left, ExeResult *r);
-Value uuc_compare_eq(Value right, Value left, ExeResult *r);
+Value uuc_op_multiply(Value left, Value right, ExeResult *r);
+Value uuc_compare_eq(Value left, Value right, ExeResult *r);
+
+void uuc_vm_dump(VM *vm);
 
 VM vm_init(Slice slice) {
     VM vm = {
@@ -27,6 +31,13 @@ VM vm_init(Slice slice) {
 
 ExeResult vm_run(VM *vm) { 
     while(vm->ii < vm->slice.size) {
+#if defined (UUC_LOG_TRACE)
+    list_print(&vm->slice.constants);
+#endif
+    #if defined (UUC_LOG_TRACE)
+    stack_print(&vm->value_stack);
+    uuc_vm_dump(vm);
+    #endif
         ExeResult r = vm_tick(vm);
         if(r) return r;
         vm_advance(vm);
@@ -103,87 +114,92 @@ ExeResult vm_tick(VM *vm) {
         }
         default: printf("DEFAULT\n");
     }
-    #if defined (UUC_LOG_TRACE)
-    stack_print(&vm->value_stack);
-    #endif
     return r;
 }
 #undef execute_operation
 
 // plz send help
-Value uuc_op_add(Value right, Value left, ExeResult *r) {
-    if((right.type != TYPE_INT && right.type != TYPE_DOUBLE) ||
-       (left.type != TYPE_INT && left.type != TYPE_DOUBLE)) {
-        LOG_ERROR("Cannot add type '%s' to type '%s'.\n", uuc_type_str(left.type), uuc_type_str(right.type));
+Value uuc_op_add(Value left, Value right, ExeResult *r) {
+    if(left.type == TYPE_OBJ && left.as.uuc_obj->type == OBJ_STRING &&
+       right.type == TYPE_OBJ && right.as.uuc_obj->type == OBJ_STRING) {
+        UucString *s = (UucString*)left.as.uuc_obj;
+        printf("left len: %ld content: '%s'\n", s->length, s->content);
+        UucString *str = uuc_concate_strings((UucString*)left.as.uuc_obj, 
+                                             (UucString*)right.as.uuc_obj);
+        return (Value){ .type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)str }};
+    }
+    if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
+       (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
+        LOG_ERROR("Cannot add type '%s' to type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
         *r = UUC_RUNTIME_ERROR;
         return type_null();
     }
-    if(right.type == TYPE_INT && left.type == TYPE_INT) {
-        long r = ((double)right.as.uuc_int) + (double)left.as.uuc_int;
+    if(left.type == TYPE_INT && right.type == TYPE_INT) {
+        long r = ((double)left.as.uuc_int) + (double)right.as.uuc_int;
         return (Value){ .type = TYPE_INT, .as = { .uuc_int = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double + left.as.uuc_double;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double + right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_INT && left.type == TYPE_DOUBLE) {
-        double r = ((double)right.as.uuc_int) + left.as.uuc_double;
+    } else if(left.type == TYPE_INT && right.type == TYPE_DOUBLE) {
+        double r = ((double)left.as.uuc_int) + right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_INT) {
-        double r = right.as.uuc_double + (double)left.as.uuc_int;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_INT) {
+        double r = left.as.uuc_double + (double)right.as.uuc_int;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double + left.as.uuc_double;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double + right.as.uuc_double;
+        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
+    } 
+    return type_null();
+}
+
+Value uuc_op_substract(Value left, Value right, ExeResult *r) {
+    if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
+       (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
+        LOG_ERROR("Cannot substract type '%s' from type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
+        *r = UUC_RUNTIME_ERROR;
+        return type_null();
+    }
+    if(left.type == TYPE_INT && right.type == TYPE_INT) {
+        long r = ((double)left.as.uuc_int) - (double)right.as.uuc_int;
+        return (Value){ .type = TYPE_INT, .as = { .uuc_int = r } };
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double - right.as.uuc_double;
+        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
+    } else if(left.type == TYPE_INT && right.type == TYPE_DOUBLE) {
+        double r = ((double)left.as.uuc_int) - right.as.uuc_double;
+        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_INT) {
+        double r = left.as.uuc_double - (double)right.as.uuc_int;
+        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double - right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     }
     return type_null();
 }
 
-Value uuc_op_substract(Value right, Value left, ExeResult *r) {
-    if((right.type != TYPE_INT && right.type != TYPE_DOUBLE) ||
-       (left.type != TYPE_INT && left.type != TYPE_DOUBLE)) {
-        LOG_ERROR("Cannot substract type '%s' from type '%s'.\n", uuc_type_str(left.type), uuc_type_str(right.type));
+Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
+    if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
+       (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
+        LOG_ERROR("Type '%s' cannot be multiplied by type '%s'.\n", uuc_type_str(left.type), uuc_type_str(right.type));
         *r = UUC_RUNTIME_ERROR;
         return type_null();
     }
-    if(right.type == TYPE_INT && left.type == TYPE_INT) {
-        long r = ((double)right.as.uuc_int) - (double)left.as.uuc_int;
+    if(left.type == TYPE_INT && right.type == TYPE_INT) {
+        long r = ((double)left.as.uuc_int) * (double)right.as.uuc_int;
         return (Value){ .type = TYPE_INT, .as = { .uuc_int = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double - left.as.uuc_double;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double * right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_INT && left.type == TYPE_DOUBLE) {
-        double r = ((double)right.as.uuc_int) - left.as.uuc_double;
+    } else if(left.type == TYPE_INT && right.type == TYPE_DOUBLE) {
+        double r = ((double)left.as.uuc_int) * right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_INT) {
-        double r = right.as.uuc_double - (double)left.as.uuc_int;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_INT) {
+        double r = left.as.uuc_double * (double)right.as.uuc_int;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double - left.as.uuc_double;
-        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    }
-    return type_null();
-}
-
-Value uuc_op_multiply(Value right, Value left, ExeResult *r) {
-    if((right.type != TYPE_INT && right.type != TYPE_DOUBLE) ||
-       (left.type != TYPE_INT && left.type != TYPE_DOUBLE)) {
-        LOG_ERROR("Type '%s' cannot be multiplied by type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
-        *r = UUC_RUNTIME_ERROR;
-        return type_null();
-    }
-    if(right.type == TYPE_INT && left.type == TYPE_INT) {
-        long r = ((double)right.as.uuc_int) * (double)left.as.uuc_int;
-        return (Value){ .type = TYPE_INT, .as = { .uuc_int = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double * left.as.uuc_double;
-        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_INT && left.type == TYPE_DOUBLE) {
-        double r = ((double)right.as.uuc_int) * left.as.uuc_double;
-        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_INT) {
-        double r = right.as.uuc_double * (double)left.as.uuc_int;
-        return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
-    } else if(right.type == TYPE_DOUBLE && left.type == TYPE_DOUBLE) {
-        double r = right.as.uuc_double * left.as.uuc_double;
+    } else if(left.type == TYPE_DOUBLE && right.type == TYPE_DOUBLE) {
+        double r = left.as.uuc_double * right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     }
     return type_null();
@@ -242,4 +258,33 @@ int uuc_type_check(Value val, UucType type, const char *msg) {
         return 1;
     }
     return 0;
+}
+
+// TODO: copy-pasta from slice_print
+void uuc_vm_dump(VM *vm) {
+    Slice *slice = &vm->slice;
+    int ii = vm->ii;
+    printf("====== Bytecode slice dump ======\n");
+    printf(" Bytes: %d\n", slice->size);
+    printf(" Instructions: %d\n", slice->size - slice->constants.size);
+    printf(" Constants: %d\n", slice->constants.size);
+    printf("============ Content ============\n");
+    for(int i = 0; i < slice->size; i++) {
+        uint8_t code = slice->codes[i];
+        if(i == ii) printf("> %4d | ", i);
+        else printf("  %4d | ", i);
+        if(code == OP_CONSTANT) {
+            uint8_t index = slice->codes[i + 1];
+            Value v = slice->constants.head[index];
+            printf("%3d:%s = %d:", code, opcode_name(code), index);
+            type_print(v);
+            i++;
+        } else if(code == OP_CONSTANT_16) {
+            LOG_ERROR("Unsupported index constant length: 16!\n");
+        } else {
+            printf("%3d:%s", code, opcode_name(code));
+        }
+        printf("\n");
+    }
+    printf("=================================\n");
 }

@@ -11,8 +11,9 @@ int assert_type(UucType expected, Value val);
 // returs 0 if numbers are the same
 int assert_integer(int expected, int test);
 
-int assert_value(Value right, Value left);
+int assert_value(Value left, Value right);
 int assert_bool(int expected, int test);
+int assert_obj(UucObj *left, UucObj *right);
 
 int assert_is_integer(Value val);
 

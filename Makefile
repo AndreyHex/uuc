@@ -1,14 +1,14 @@
 CC=gcc
-CC_DEBUG=gcc -DUUC_LOG_DEBUG
-CC_TRACE=gcc -DUUC_LOG_TRACE -DUUC_LOG_DEBUG
-CFLAGS=-I ./src/include -Wall
+CC_DEBUG=gcc -g -DUUC_LOG_DEBUG
+CC_TRACE=gcc -g -DUUC_LOG_TRACE -DUUC_LOG_DEBUG
+CFLAGS=-I src/include -Wall
 
-TARGET=./target
+TARGET=target
 OBJ_DIR=$(TARGET)/obj
 BIN_DIR=$(TARGET)/bin
 TEST_OBJ_DIR=$(TARGET)/test/obj
 TEST_BIN_DIR=$(TARGET)/test/bin
-SRC=./src
+SRC=src
 
 SRCS = $(shell find $(SRC) -name '*.c' -not -path '**/test/*')
 TEST_SRCS = $(shell find $(SRC) -name '*.c' -not -name 'main.c')
@@ -26,7 +26,7 @@ $(TEST_BIN_DIR)/debug: $(TEST_OBJ)
 
 $(TEST_BIN_DIR)/trace: $(TEST_TRACE_OBJ)
 	mkdir -p $(dir $@)
-	$(CC_TRACE) -o $@ $^ $(CFLAGS)
+	$(CC_TRACE) -o $@  $^ $(CFLAGS)
 
 $(OBJ_DIR)/%.o: %.c
 	mkdir -p $(dir $@)

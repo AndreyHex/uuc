@@ -2,7 +2,6 @@
 #define uuc_vm_h
 
 #include "bytecode.h"
-#include "values.h"
 #include <stdint.h>
 
 typedef enum {

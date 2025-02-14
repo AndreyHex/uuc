@@ -4,7 +4,6 @@
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <values.h>
 
 const char* opcode_name(OpCode opcode);
 
@@ -23,8 +22,8 @@ Slice slice_init(uint32_t init_capacity) {
 
 void slice_push_code(OpCode code, Slice *slice) {
     if(slice->size == slice->capacity) {
-        uint32_t new_cap = slice->capacity * 2;
-        LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);
+        size_t new_cap = slice->capacity * 2;
+        LOG_TRACE("Growing slice capacity from %d to %ld\n", slice->capacity, new_cap);
         slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
     }
     slice->codes[slice->size] = code;
@@ -33,17 +32,18 @@ void slice_push_code(OpCode code, Slice *slice) {
 
 void slice_push_constant(Value value, Slice *slice) {
     if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
-        uint32_t new_cap = slice->capacity * 2;
-        LOG_TRACE("Growing slice capacity from %d to %d\n", slice->capacity, new_cap);
+        size_t new_cap = slice->capacity * 2;
+        LOG_TRACE("Growing slice capacity from %d to %ld\n", slice->capacity, new_cap);
         slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
+        slice->capacity = new_cap;
     }
     uint64_t index = list_push(&slice->constants, value);
     OpCode code;
     if(index <= UINT8_MAX) {
-        LOG_TRACE("Pushing OP_CONSTANT code with value: %f\n", value);
+        LOG_TRACE("Pushing OP_CONSTANT code\n");
         code = OP_CONSTANT;
     } else if (index <= UINT16_MAX) {
-        LOG_TRACE("Pushing OP_CONSTANT_16 code with value: %f\n", value);
+        LOG_TRACE("Pushing OP_CONSTANT_16 code\n");
         code = OP_CONSTANT_16;
     } else {
         LOG_ERROR("Cannot push constant instruction when index in constant list is greater than %d. Index: %d\n", UINT16_MAX, slice->constants.size);

@@ -19,7 +19,7 @@ int assert_str(char *expected, char *test) {
             printf("       got: %s\n", test);
             return 1;
         }
-        if(e == '\0' || t == '\0') return 0;
+        if(e == '\0' || t == '\0') return t != e;
         i++;
         e = expected[i];
         t = test[i];
@@ -31,15 +31,27 @@ int assert_null(Value val) {
     return val.type == TYPE_NULL;
 }
 
-int assert_value(Value right, Value left) {
-    if(assert_type(right.type, left)) return 1;
-    switch(right.type) {
-        case TYPE_INT: return assert_integer(right.as.uuc_int, left.as.uuc_int);
-        case TYPE_DOUBLE: return assert_double(right.as.uuc_double, left.as.uuc_double);
-        case TYPE_BOOL: return assert_bool(right.as.uuc_bool, left.as.uuc_bool);
+int assert_value(Value left, Value right) {
+    if(assert_type(left.type, right)) return 1;
+    switch(left.type) {
+        case TYPE_INT: return assert_integer(left.as.uuc_int, right.as.uuc_int);
+        case TYPE_DOUBLE: return assert_double(left.as.uuc_double, right.as.uuc_double);
+        case TYPE_BOOL: return assert_bool(left.as.uuc_bool, right.as.uuc_bool);
+        case TYPE_OBJ: return assert_obj(left.as.uuc_obj, right.as.uuc_obj);
         default: return 1;
     }
     return 0;
+}
+
+int assert_obj(UucObj *left, UucObj *right) {
+    if(right->type != left->type) {
+        printf("\033[31mAssertion error: obj type mistmatch -- (left) %d is not (right) %d\033[m\n", left->type, right->type); // only strings now
+        return 1;
+    }
+    switch(left->type) {
+        case OBJ_STRING: return assert_str(((UucString*)left)->content, ((UucString*)right)->content);
+        default: return 0;
+    }
 }
 
 int assert_type(UucType expected, Value val) {
@@ -63,9 +75,9 @@ int assert_integer(int expected, int test) {
     return 0;
 }
 
-int assert_bool(int right, int left) {
-    if(right != left) {
-        printf("\033[31mAssertion error: booleans are different -- (right) %s != (left) %s\033[m\n", bool_str(right), bool_str(left));
+int assert_bool(int left, int right) {
+    if(left != right) {
+        printf("\033[31mAssertion error: booleans are different -- (left) %s != (right) %s\033[m\n", bool_str(left), bool_str(right));
         return 1;
     }
     return 0;
@@ -73,7 +85,7 @@ int assert_bool(int right, int left) {
 
 int assert_double_d(double expected, double test, double delta) {
     if(fabs(expected - test) > delta) {
-        printf("\033[31mAssertion error: numbers are different -- (right) %f != (left) %f\033[m\n", expected, test);
+        printf("\033[31mAssertion error: numbers are different -- (left) %f != (right) %f\033[m\n", expected, test);
         return 1;
     }
     return 0;

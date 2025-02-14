@@ -16,8 +16,8 @@ void summarize_tests(TestResults results, int *passed, int *all) {
 }
 
 int main(int argc, const char *argv[]) {
-    TestResults parser_res = run_parser_test(argc, argv);
     TestResults lexer_res = run_lexer_test(argc, argv);
+    TestResults parser_res = run_parser_test(argc, argv);
     TestResults vm_res = run_vm_test(argc, argv);
     
     int passed = 0;
