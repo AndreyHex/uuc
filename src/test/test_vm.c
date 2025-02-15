@@ -126,3 +126,4 @@ TestResult run_vm_error_test_case(ExeResult expected_res, char *code) {
 #undef DOUBLE_VAL
 #undef BOOL_TRUE 
 #undef BOOL_FALSE 
+#undef STRING_OBJ 

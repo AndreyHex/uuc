@@ -24,6 +24,7 @@ typedef struct {
 typedef struct {
     UucObj uuc_obj;
     uint64_t length;
+    uint64_t hash;
     char content[];
 } UucString;
 

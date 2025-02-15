@@ -7,5 +7,6 @@ UucString *uuc_create_string(char *content);
 UucString *uuc_copy_string(const char *src, size_t len);
 UucString *uuc_concate_strings(UucString *left, UucString *right);
 void uuc_free_string(UucString *str);
+uint64_t uuc_hash_string(UucString *string);
 
 #endif
