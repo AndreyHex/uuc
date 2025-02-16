@@ -3,6 +3,8 @@
 
 #include "../include/uuc_type.h"
 
+int assert_fail(char *msg);
+
 // returns 0 if strings are the same
 int assert_str(char *expected, char *test);
 

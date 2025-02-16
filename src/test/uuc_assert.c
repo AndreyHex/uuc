@@ -7,6 +7,11 @@ const char *bool_str(int bool) {
     return bool ? "true" : "false";
 }
 
+int assert_fail(char *msg) {
+    printf("\033[31mAssertion error: '%s'\033[m \n", msg);
+    return 1;
+}
+
 int assert_str(char *expected, char *test) {
     int i = 0;
     char e = expected[i];
@@ -56,7 +61,7 @@ int assert_obj(UucObj *left, UucObj *right) {
 
 int assert_type(UucType expected, Value val) {
     if(val.type != expected) {
-        printf("\033[31mAssertion error: type mistmatch -- (right) %s is not (left) %s\033[m\n", 
+        printf("\033[31mAssertion error: type mistmatch -- (left) %s is not (right) %s\033[m\n", 
                uuc_type_str(expected), uuc_type_str(val.type));
         return 1;
     }
@@ -69,7 +74,7 @@ int assert_is_integer(Value val) {
 
 int assert_integer(int expected, int test) {
     if(expected != test) {
-        printf("\033[31mAssertion error: numbers are different -- (right) %d != (left) %d\033[m\n", expected, test);
+        printf("\033[31mAssertion error: numbers are different -- (left) %d != (right) %d\033[m\n", expected, test);
         return 1;
     }
     return 0;
