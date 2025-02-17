@@ -52,8 +52,16 @@ TestResults run_parser_test(int argc, const char *argv[]) {
                            "!true==false;");
     parser_test_case(&res, "( == ( + 2 2 ) 3 )", 
                            "2+2==3;");
-    parser_test_case(&res, "( + string string )", 
+    parser_test_case(&res, "( + \"string\" \"string\" )", 
                            "\"string\" + \"string\";");
+    parser_test_case(&res, "( var a \"string\" )", 
+                           "var a = \"string\";");
+    parser_test_case(&res, "( var a ( + \"Hello\" \"World\" ) )", 
+                           "var a = \"Hello\" + \"World\";");
+    parser_test_case(&res, "( = a ( + \"Hello\" \"World\" ) )", 
+                           "a = \"Hello\" + \"World\";");
+    parser_test_case(&res, "( = ( + a b ) ( + c d ) )", 
+                           "a + b = c + d;");
     return res;
 }
 
@@ -62,6 +70,7 @@ void parser_test_case(TestResults *results, char *expecting, char *code) {
     printf("Test parse input expression: '%s'\n", code);
     Slice slice = parse_code(code);
     slice_s_notation(&slice, buf, 300);
+    printf("Result: %s\n", buf);
     int r = assert_str(expecting, buf);
     add_result(results, (TestResult){ .result = r ? FAIL : PASS });
 }

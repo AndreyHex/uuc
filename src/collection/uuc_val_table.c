@@ -155,6 +155,7 @@ int uuc_val_table_remove(UucValTable *table, UucString *key) {
 void uuc_val_table_change_capacity_(UucValTable *table, size_t new_cap) {
     TabNode *new_n = malloc(sizeof(TabNode) * new_cap);
     TabNode *old_n = table->nodes;
+    for(int i = 0; i < new_cap; i++) new_n[i].type = NODE_EMPTY;
     table->nodes = new_n;
     size_t old_cap = table->node_capacity;
     table->node_capacity = new_cap;

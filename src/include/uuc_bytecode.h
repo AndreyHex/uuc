@@ -10,6 +10,7 @@ typedef enum {
 
     OP_DEFINE_GLOBAL, // TOOD: 16 bit version ?
     OP_GET_GLOBAL,
+    OP_ASSIGN,
 
     OP_TRUE,
     OP_FALSE,

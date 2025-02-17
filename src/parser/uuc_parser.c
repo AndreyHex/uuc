@@ -10,6 +10,7 @@
 void parse_declaration(ParserContext *context);
 void parse_var_declaration(ParserContext *context);
 void parse_statement(ParserContext *context);
+void parse_assignment(ParserContext *context);
 void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
 uint16_t parse_identifier(ParserContext *context);
@@ -85,6 +86,14 @@ void parse_var_declaration(ParserContext *context) {
     parser_emit_opcode(index, context);
 }
 
+void parse_assignment(ParserContext *context) {
+    uint16_t index = parse_identifier(context);
+    parser_consume(TOKEN_EQUAL, context);
+    parse_expression(context);
+    // parser_emit_opcode(OP_SET_GLOBAL, context);
+    parser_emit_opcode(index, context);
+}
+
 uint16_t parse_identifier(ParserContext *context) {
     Token t = parser_peek(context);
     parser_consume(TOKEN_IDENTIFIER, context);
@@ -105,6 +114,9 @@ void parse_statement(ParserContext *context) {
 }
 
 void parse_expression_statement(ParserContext *context) {
+   // if(parser_match(TOKEN_IDENTIFIER, context)) {
+   //     parse_assignment(context);
+   // } else parse_expression(context);
     parse_expression(context);
     parser_consume(TOKEN_SEMICOLON, context);
     parser_emit_opcode(OP_POP, context);
@@ -185,6 +197,7 @@ void parse_binary(ParserContext *context) {
         case TOKEN_GREATER_EQUAL: parser_emit_opcode(OP_GTE, context); break;
         case TOKEN_LESS: parser_emit_opcode(OP_LT, context); break;
         case TOKEN_LESS_EQUAL: parser_emit_opcode(OP_LTE, context); break;
+        case TOKEN_EQUAL: parser_emit_opcode(OP_ASSIGN, context); break;
         default: LOG_ERROR("Unsupported binary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }

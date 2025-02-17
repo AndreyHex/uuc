@@ -84,6 +84,17 @@ void slice_print(Slice *slice) {
             i++;
         } else if(code == OP_CONSTANT_16) {
             LOG_ERROR("Unsupported index constant length: 16!\n");
+        } else if(code == OP_DEFINE_GLOBAL) {
+            printf("%3d:%s  ", code, opcode_name(code));
+            uint8_t index = slice->codes[i + 1];
+            Value key_v = slice->constants.head[index];
+            UucString *key = (UucString*)key_v.as.uuc_obj;
+            printf("%s", key->content);
+            i++;
+        } else if(code == OP_GET_GLOBAL) {
+            uint8_t index = slice->codes[i + 1];
+            printf("%3d:%s index:%d", code, opcode_name(code), index);
+            i++;
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }
@@ -99,6 +110,7 @@ const char *op_code_names[] = {
 
     "OP_DEFINE_GLOBAL",
     "OP_GET_GLOBAL",
+    "OP_ASSIGN",
 
     "OP_TRUE",
     "OP_FALSE",
@@ -124,6 +136,6 @@ const char *op_code_names[] = {
 };
 
 const char* opcode_name(OpCode opcode) {
-    if(opcode > 16) return "UNKNOWN OP CODE";
+    if(opcode > 22) return "UNKNOWN OP CODE";
     return op_code_names[opcode];
 }

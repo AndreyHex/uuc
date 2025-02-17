@@ -102,6 +102,10 @@ ExeResult vm_tick(VM *vm) {
             stack_push(stack, val);
             break;
         }
+        case OP_ASSIGN: {
+            LOG_ERROR(" wip wip wip \n");
+            return UUC_RUNTIME_ERROR;
+        }
         case OP_NOT: {
             Value v = stack_pop(stack);
             if(uuc_null_check(&v)) return UUC_RUNTIME_ERROR;
