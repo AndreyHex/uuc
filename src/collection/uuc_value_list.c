@@ -38,7 +38,7 @@ void list_print(ValueList *list) {
     printf("List dump. Capacity: %d Size: %d. Content: [", list->capacity,
            list->size);
     for (int i = 0; i < list->size; i++) {
-        type_print(list->head[i]);
+        uuc_val_print(list->head[i]);
         printf(",");
     }
     printf("]\n");

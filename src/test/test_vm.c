@@ -99,7 +99,7 @@ TestResult run_vm_test_case(Value expecting, char *code) {
 #endif
     Value r = stack_peek(&vm.value_stack);
     printf(" => ");
-    type_print(r);
+    uuc_val_print(r);
     printf("\n");
     if(assert_value(expecting, r)) {
         return (TestResult){ .result = FAIL };

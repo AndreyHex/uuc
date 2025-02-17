@@ -25,6 +25,7 @@ VM vm_init(Slice slice) {
         .ip = slice.codes,
         .ii = 0,
         .value_stack = stack_init(32),
+        .global_table = uuc_init_val_table(16),
     };
     return vm;
 }
@@ -62,6 +63,8 @@ ExeResult vm_tick(VM *vm) {
     uint8_t ip = *vm->ip;
     Values *stack = &vm->value_stack;
     Values *constants = &vm->slice.constants;
+    UucValTable *globals = &vm->global_table;
+
     ExeResult r = UUC_OK;
     switch(ip) {
         case OP_CONSTANT: {
@@ -77,6 +80,28 @@ ExeResult vm_tick(VM *vm) {
             stack_push(stack, list_get(constants, index));
             break;
         }
+        case OP_DEFINE_GLOBAL: {
+            vm_advance(vm);
+            uint8_t index = *vm->ip;
+            UucString *name = (UucString *)list_get(constants, index).as.uuc_obj;
+            Value val = stack_peek(stack);
+            uuc_val_table_put(globals, name, val);
+            stack_pop(stack);
+            break;
+        }
+        case OP_GET_GLOBAL: {
+            vm_advance(vm);
+            uint8_t index = *vm->ip;
+            UucString *name = (UucString *)list_get(constants, index).as.uuc_obj;
+            Value val;
+            int r = uuc_val_table_get(globals, name, &val);
+            if(r == 0) {
+                LOG_ERROR("Undefined variable '%s'\n", name->content);
+                return UUC_RUNTIME_ERROR;
+            }
+            stack_push(stack, val);
+            break;
+        }
         case OP_NOT: {
             Value v = stack_pop(stack);
             if(uuc_null_check(&v)) return UUC_RUNTIME_ERROR;
@@ -89,16 +114,16 @@ ExeResult vm_tick(VM *vm) {
             Value v = stack_pop(stack);
             if(uuc_null_check(&v)) return UUC_RUNTIME_ERROR;
             if(uuc_type_check(v, TYPE_INT, "Cannot negate non number type.")) return UUC_RUNTIME_ERROR;
-            stack_push(stack, type_int(-(v.as.uuc_int)));
+            stack_push(stack, uuc_val_int(-(v.as.uuc_int)));
             break;
         }
         case OP_ADD: execute_operation(uuc_op_add) break;
         case OP_SUBSTRACT: execute_operation(uuc_op_substract) break;
         case OP_MULTIPLY: execute_operation(uuc_op_multiply) break;
         case OP_DIVIDE: execute_operation(uuc_op_divide) break;
-        case OP_TRUE: stack_push(stack, type_bool(1)); break;
-        case OP_FALSE: stack_push(stack, type_bool(0)); break;
-        case OP_NULL: stack_push(stack, type_null()); break;
+        case OP_TRUE: stack_push(stack, uuc_val_bool(1)); break;
+        case OP_FALSE: stack_push(stack, uuc_val_bool(0)); break;
+        case OP_NULL: stack_push(stack, uuc_val_null()); break;
 
         case OP_EQ: execute_operation(uuc_compare_eq) break;
         case OP_NE: execute_operation(uuc_compare_ne) break;
@@ -110,6 +135,10 @@ ExeResult vm_tick(VM *vm) {
         case OP_RETURN: {
             printf("OP_RETURN\n");
             // printf("%f\n", stack_pop(stack));
+            break;
+        }
+        case OP_POP: {
+            stack_pop(stack);
             break;
         }
         default: printf("DEFAULT\n");
@@ -132,7 +161,7 @@ Value uuc_op_add(Value left, Value right, ExeResult *r) {
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Cannot add type '%s' to type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
         *r = UUC_RUNTIME_ERROR;
-        return type_null();
+        return uuc_val_null();
     }
     if(left.type == TYPE_INT && right.type == TYPE_INT) {
         long r = ((double)left.as.uuc_int) + (double)right.as.uuc_int;
@@ -150,7 +179,7 @@ Value uuc_op_add(Value left, Value right, ExeResult *r) {
         double r = left.as.uuc_double + right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     } 
-    return type_null();
+    return uuc_val_null();
 }
 
 Value uuc_op_substract(Value left, Value right, ExeResult *r) {
@@ -158,7 +187,7 @@ Value uuc_op_substract(Value left, Value right, ExeResult *r) {
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Cannot substract type '%s' from type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
         *r = UUC_RUNTIME_ERROR;
-        return type_null();
+        return uuc_val_null();
     }
     if(left.type == TYPE_INT && right.type == TYPE_INT) {
         long r = ((double)left.as.uuc_int) - (double)right.as.uuc_int;
@@ -176,7 +205,7 @@ Value uuc_op_substract(Value left, Value right, ExeResult *r) {
         double r = left.as.uuc_double - right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     }
-    return type_null();
+    return uuc_val_null();
 }
 
 Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
@@ -184,7 +213,7 @@ Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Type '%s' cannot be multiplied by type '%s'.\n", uuc_type_str(left.type), uuc_type_str(right.type));
         *r = UUC_RUNTIME_ERROR;
-        return type_null();
+        return uuc_val_null();
     }
     if(left.type == TYPE_INT && right.type == TYPE_INT) {
         long r = ((double)left.as.uuc_int) * (double)right.as.uuc_int;
@@ -202,7 +231,7 @@ Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
         double r = left.as.uuc_double * right.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     }
-    return type_null();
+    return uuc_val_null();
 }
 
 Value uuc_op_divide(Value divident, Value divisor, ExeResult *r) {
@@ -210,11 +239,11 @@ Value uuc_op_divide(Value divident, Value divisor, ExeResult *r) {
        (divisor.type != TYPE_INT && divisor.type != TYPE_DOUBLE)) {
         LOG_ERROR("Type '%s' cannot be divided by type '%s'.\n", uuc_type_str(divident.type), uuc_type_str(divisor.type));
         *r = UUC_RUNTIME_ERROR;
-        return type_null();
+        return uuc_val_null();
     }
     if(uuc_zero_division_check(divisor)) {
         *r = UUC_RUNTIME_ERROR;
-        return type_null();
+        return uuc_val_null();
     }
     if(divident.type == TYPE_INT && divisor.type == TYPE_INT) {
         long r = divident.as.uuc_int / divisor.as.uuc_int;
@@ -232,7 +261,7 @@ Value uuc_op_divide(Value divident, Value divisor, ExeResult *r) {
         double r = divident.as.uuc_double / divisor.as.uuc_double;
         return (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = r } };
     }
-    return type_null();
+    return uuc_val_null();
 }
 
 int uuc_null_check(Value *val) {
@@ -260,6 +289,12 @@ int uuc_type_check(Value val, UucType type, const char *msg) {
     return 0;
 }
 
+void uuc_free_vm(VM *vm) {
+    stack_free(&vm->value_stack);
+    list_free(&vm->slice.constants);
+    uuc_val_table_free(&vm->global_table);
+}
+
 // TODO: copy-pasta from slice_print
 void uuc_vm_dump(VM *vm) {
     Slice *slice = &vm->slice;
@@ -267,7 +302,10 @@ void uuc_vm_dump(VM *vm) {
     printf("====== Bytecode slice dump ======\n");
     printf(" Bytes: %d\n", slice->size);
     printf(" Instructions: %d\n", slice->size - slice->constants.size);
-    printf(" Constants: %d\n", slice->constants.size);
+    printf(" Constants:\n  ");
+    list_print(&vm->slice.constants);
+    printf("============ Globals ============\n");
+    uuc_val_table_dump(&vm->global_table);
     printf("============ Content ============\n");
     for(int i = 0; i < slice->size; i++) {
         uint8_t code = slice->codes[i];
@@ -277,10 +315,25 @@ void uuc_vm_dump(VM *vm) {
             uint8_t index = slice->codes[i + 1];
             Value v = slice->constants.head[index];
             printf("%3d:%s = %d:", code, opcode_name(code), index);
-            type_print(v);
+            uuc_val_print(v);
             i++;
         } else if(code == OP_CONSTANT_16) {
             LOG_ERROR("Unsupported index constant length: 16!\n");
+        } else if(code == OP_DEFINE_GLOBAL) {
+            printf("%3d:%s  ", code, opcode_name(code));
+            uint8_t index = slice->codes[i + 1];
+            Value key_v = slice->constants.head[index];
+            UucString *key = (UucString*)key_v.as.uuc_obj;
+            printf("%s = ", key->content);
+            Value val;
+            int r = uuc_val_table_get(&vm->global_table, key, &val);
+            if(1) uuc_val_print(val);
+            else uuc_val_print(uuc_val_null());
+            i++;
+        } else if(code == OP_GET_GLOBAL) {
+            uint8_t index = slice->codes[i + 1];
+            printf("%3d:%s index:%d", code, opcode_name(code), index);
+            i++;
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }

@@ -8,6 +8,9 @@ typedef enum {
     OP_CONSTANT,
     OP_CONSTANT_16,
 
+    OP_DEFINE_GLOBAL, // TOOD: 16 bit version ?
+    OP_GET_GLOBAL,
+
     OP_TRUE,
     OP_FALSE,
     OP_NULL,
@@ -28,6 +31,7 @@ typedef enum {
     OP_LTE,
 
     OP_RETURN,
+    OP_POP,
 } OpCode;
 
 typedef struct {
@@ -39,7 +43,10 @@ typedef struct {
 
 Slice slice_init(uint32_t initial_capacity);
 void slice_push_code(OpCode code, Slice *slice);
-void slice_push_constant(Value value, Slice *slice);
+// just adds constant to store
+uint64_t slice_register_constant(Value value, Slice *slice);
+// adds constant and OP_CONSTANT opcode
+uint64_t slice_push_constant(Value value, Slice *slice);
 
 void slice_print(Slice *slice);
 const char* opcode_name(OpCode opcode);

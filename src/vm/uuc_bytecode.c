@@ -30,14 +30,18 @@ void slice_push_code(OpCode code, Slice *slice) {
     slice->size++;
 }
 
-void slice_push_constant(Value value, Slice *slice) {
+uint64_t slice_register_constant(Value value, Slice *slice) {
     if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
         size_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %ld\n", slice->capacity, new_cap);
         slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
         slice->capacity = new_cap;
     }
-    uint64_t index = list_push(&slice->constants, value);
+    return list_push(&slice->constants, value);
+}
+
+uint64_t slice_push_constant(Value value, Slice *slice) {
+    uint64_t index = slice_register_constant(value, slice);
     OpCode code;
     if(index <= UINT8_MAX) {
         LOG_TRACE("Pushing OP_CONSTANT code\n");
@@ -60,6 +64,7 @@ void slice_push_constant(Value value, Slice *slice) {
         slice->codes[slice->size] = index;
         slice->size++;
     }
+    return index;
 }
 
 void slice_print(Slice *slice) {
@@ -75,7 +80,7 @@ void slice_print(Slice *slice) {
             uint8_t index = slice->codes[i + 1];
             Value v = slice->constants.head[index];
             printf("%3d:%s = %d:", code, opcode_name(code), index);
-            type_print(v);
+            uuc_val_print(v);
             i++;
         } else if(code == OP_CONSTANT_16) {
             LOG_ERROR("Unsupported index constant length: 16!\n");
@@ -91,6 +96,9 @@ void slice_print(Slice *slice) {
 const char *op_code_names[] = {
     "OP_CONSTANT",
     "OP_CONSTANT_16",
+
+    "OP_DEFINE_GLOBAL",
+    "OP_GET_GLOBAL",
 
     "OP_TRUE",
     "OP_FALSE",
@@ -112,6 +120,7 @@ const char *op_code_names[] = {
     "OP_LTE",
 
     "OP_RETURN",
+    "OP_POP",
 };
 
 const char* opcode_name(OpCode opcode) {

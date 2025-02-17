@@ -19,13 +19,13 @@ boolean = "true" | "false" ;
 null = "null" ;
 
 program     = { declaration }, EOF ;
-declaration = statement | var-decl | fn-decl ;
-statement   = if | while | block | ( expr-stmt, ";" ) | return ;
+declaration = statement | var-decl | fn-decl | class-decl ;
+statement   = if | while | for | block | ( expr-stmt, ";" ) | return ;
 block       = "{", declaration + , "}"
 if          = "if", "(", expression, ")", statement, ( "else", statement ) ? ;
 while       = "while", "(", expression, ")", statement ;
 for         = "for", "(", ( expression | var-decl | ";" ), expression ?, ";", expr-stmt ?, ";", ")", statement ;
-return      = "return", expression ?, "
+return      = "return", expression ?, ";" ;
 var-decl    = "var", identifier, ( "=", expression ) ?, ";" ;
 fn-decl     = "fn", identifier, "(", { identifier }, ")" block ;
 class-decl  = "class", identifier, ( "<", identifier ) ?, "{", { fn-decl }, "}" ;
@@ -38,7 +38,7 @@ ternary    = expression, "?", expression, ":", expression ;
 equality   = comparison, { ( "!=" | "==" ), comparison } ;
 comparison = term, { ( ">" | "<" | ">=" | "<=" ), term } ;
 term       = factor, { ( "+" | "-" ), factor } ;
-factor     = unary, { ( "/" | "*" ), unary } ;  (* make it left recursive? *)
+factor     = unary, { ( "/" | "*" ), unary } ;
 unary      = ( "!" | "-" ), unary | call ;
 call       = primary ( ( "(",  arguments ?, ")" ) | ( ".", identifier ) ) + ;
 arguments  = expression, { ",", expression } ;

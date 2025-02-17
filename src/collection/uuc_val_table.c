@@ -209,7 +209,7 @@ void uuc_val_table_dump_entry_(Entry *e) {
         printf("!    NULL -> \n"); return;
     }
     printf("%5s -> ", e->key->content);
-    type_print(e->value);
+    uuc_val_print(e->value);
     printf("\n");
 }
 

@@ -38,21 +38,25 @@ typedef struct {
     } as;
 } Value;
 
-static inline Value type_null() {
+static inline Value uuc_val_null() {
     return (Value){ .type = TYPE_NULL };
 }
 
-static inline Value type_int(int v) {
+static inline Value uuc_val_int(int v) {
     return (Value){ .type = TYPE_INT, .as = { .uuc_int = v } };
 }
 
-static inline Value type_bool(int v) {
+static inline Value uuc_val_bool(int v) {
     return (Value){ .type = TYPE_BOOL, .as = { .uuc_bool = v } };
+}
+
+static inline Value uuc_val_string_obj(UucString *str) {
+    return (Value){ .type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)str } };
 }
 
 const char *uuc_type_str(UucType type);
 
-static inline void type_print(Value val) {
+static inline void uuc_val_print(Value val) {
     switch(val.type) {
         case TYPE_INT: printf("%ld", val.as.uuc_int); break;
         case TYPE_DOUBLE: printf("%f", val.as.uuc_double); break;

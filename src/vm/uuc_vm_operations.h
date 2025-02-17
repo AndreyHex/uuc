@@ -25,7 +25,7 @@ Value uuc_ ## op_name(Value left, Value right, ExeResult *r) { \
     if(res != -1) return (Value){ .type = TYPE_BOOL, .as = { .uuc_bool = res } };           \
     LOG_ERROR("Cannot compare types '%s' and '%s'.\n", uuc_type_str(lt), uuc_type_str(rt)); \
     *r = UUC_RUNTIME_ERROR; \
-   return type_null(); \
+   return uuc_val_null(); \
 }
 
 #define CREATE_TWOARG_FUN_DECL(op_name, cmp) \
