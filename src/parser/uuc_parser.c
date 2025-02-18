@@ -4,6 +4,7 @@
 #include "../include/uuc_bytecode.h"
 #include "../include/uuc_precedence.h"
 #include "../include/uuc_string.h"
+#include "../include/uuc_result.h"
 #include <stdint.h>
 #include <stdlib.h>
 
@@ -14,13 +15,13 @@ void parse_assignment(ParserContext *context);
 void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
 uint16_t parse_identifier(ParserContext *context);
-void parse_unary(ParserContext *context);
-void parse_binary(ParserContext *context);
+void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
+void parse_unary(int can_assign, ParserContext *context);
+void parse_binary(int can_assign, ParserContext *context);
 void parse_number(Token token, ParserContext *context);
 void parse_string(Token token, ParserContext *context);
 void parse_bool(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
-void parse_precedence(uint8_t min_p, ParserContext *context);
 
 void parser_advance(ParserContext *context);
 // returns current token
@@ -39,33 +40,59 @@ void parser_emit_opcode(OpCode code, ParserContext *context);
 // match token_type with current token in context
 int parser_match(TokenType token_type, ParserContext *context);
 
+void parser_synchronize(ParserContext *context);
+void parser_panic(ParserContext *context);
+
 Token next(ParserContext *context) {
     return next_token(&context->lexer_context);
 }
 
-Slice parse_code(char *code) {
+UucResult parse_code(Slice *slice, char *code) {
     LexerContext lexer_context = lexer_init_context(code);
     ParserContext context = { 
         .lexer_context  = lexer_context,
         .bytecode = slice_init(32),
         .current_token = {0},
         .previous_token = {0},
+        .panic = 0,
+        .error = 0,
     };
     parser_advance(&context);
 
     while(!parser_match(TOKEN_EOF, &context) && !parser_match(TOKEN_ERROR, &context)) {
         parse_declaration(&context);
     }
-    return context.bytecode;
+    if(context.error > 0) return UUC_COMP_ERROR;
+    *slice = context.bytecode;
+    return UUC_OK;
 }
 
 void parse_declaration(ParserContext *context) {
     Token t = parser_peek(context);
     switch(t.type) {
         case TOKEN_VAR: parse_var_declaration(context); break;
-        case TOKEN_FN: printf("fn\n"); break;
-        case TOKEN_CLASS: printf("class\n"); break;
+        case TOKEN_FN: 
+        case TOKEN_CLASS: {
+            printf("class of fn -- WIP --\n");
+            break;
+        }
         default: parse_statement(context); break;
+    }
+    if(context->panic) parser_synchronize(context);
+}
+
+void parser_synchronize(ParserContext *context) {
+    Token p = parser_peek(context);
+    while(p.type != TOKEN_EOF) {
+        if(p.type == TOKEN_SEMICOLON) {
+            parser_advance(context);
+            return;
+        }
+        switch (p.type) {
+            case TOKEN_VAR: return;
+            default:;
+        }
+        parser_advance(context);
     }
 }
 
@@ -114,41 +141,42 @@ void parse_statement(ParserContext *context) {
 }
 
 void parse_expression_statement(ParserContext *context) {
-   // if(parser_match(TOKEN_IDENTIFIER, context)) {
-   //     parse_assignment(context);
-   // } else parse_expression(context);
-    parse_expression(context);
+    parse_expression( context);
     parser_consume(TOKEN_SEMICOLON, context);
     parser_emit_opcode(OP_POP, context);
 }
 
 void parse_expression(ParserContext *context) {
-    parse_precedence(1, context);
+    parse_precedence(1, 1, context);
 }
 
-void parse_precedence(uint8_t min_p, ParserContext *context) {
+void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context) {
     Token c = parser_peek(context);
     switch(c.type) {
         case TOKEN_INTEGER:
         case TOKEN_DOUBLE: {
             parse_number(c, context);
             parser_advance(context);
+            can_assign = 0;
             break;
         }
         case TOKEN_TRUE:
         case TOKEN_FALSE: {
             parser_emit_opcode(c.type == TOKEN_TRUE ? OP_TRUE : OP_FALSE , context);
             parser_advance(context);
+            can_assign = 0;
             break;
         }
         case TOKEN_STRING: {
             parse_string(c, context);
             parser_advance(context);
+            can_assign = 0;
             break;
         }
         case TOKEN_NULL: {
             parser_emit_opcode(OP_NULL, context);
             parser_advance(context);
+            can_assign = 0;
             break;
         }
         case TOKEN_LPAREN: parse_grouping(context); break;
@@ -158,22 +186,29 @@ void parse_precedence(uint8_t min_p, ParserContext *context) {
             parser_emit_opcode(index, context);
             break;
         }
-        default: parse_unary(context);
+        default: parse_unary(can_assign, context);
     }
 
     Token op = parser_peek(context);
-    LOG_TRACE("parse_precedence token op: %s precedence: %d min_p: %d position: %d:%d\n", token_name(op.type), precedence(op.type), min_p, op.line, op.pos);
+    if(op.type != TOKEN_EQUAL) can_assign = 0;
+    else if(can_assign == 0) {
+        LOG_ERROR("Cannot assign to expression at %d:%d.\n", op.line, op.pos);
+        parser_panic(context);
+        return;
+    }
+    LOG_TRACE("parse_precedence token op: %s precedence: %d min_p: %d can_assign: %d position: %d:%d\n", token_name(op.type), precedence(op.type), min_p, can_assign, op.line, op.pos);
     while(precedence(op.type) > min_p) {
-        parse_binary(context);
+        parse_binary(can_assign, context);
         op = parser_peek(context);
     }
 }
 
-void parse_unary(ParserContext *context) {
+void parse_unary(int can_assign, ParserContext *context) {
+    can_assign = 0;
     Token op = parser_peek(context);
     parser_advance(context);
     // prefix binding is stronger for '-' as example
-    parse_precedence(precedence(op.type) + 6, context);     
+    parse_precedence(can_assign, precedence(op.type) + 6, context);     
     switch(op.type) {
         case TOKEN_MINUS: parser_emit_opcode(OP_NEGATE, context); break;
         case TOKEN_BANG: parser_emit_opcode(OP_NOT, context); break;
@@ -181,11 +216,11 @@ void parse_unary(ParserContext *context) {
     }
 }
 
-void parse_binary(ParserContext *context) {
+void parse_binary(int can_assign, ParserContext *context) {
     Token op = parser_peek(context);
-    LOG_TRACE("parse_binary token: %s precedence: %d position: %d:%d\n", token_name(op.type), precedence(op.type), op.line, op.pos);
+    LOG_TRACE("parse_binary token: %s precedence: %d can_assign: %d position: %d:%d\n", token_name(op.type), precedence(op.type), can_assign, op.line, op.pos);
     parser_advance(context);
-    parse_precedence(precedence(op.type), context);
+    parse_precedence(can_assign, precedence(op.type), context);
     switch(op.type) {
         case TOKEN_PLUS: parser_emit_opcode(OP_ADD, context); break;
         case TOKEN_MINUS: parser_emit_opcode(OP_SUBSTRACT, context); break;
@@ -217,7 +252,8 @@ void parser_consume(TokenType token_type, ParserContext *context) {
     if(!parser_match(token_type, context)) {
         Token t = context->current_token;
         LOG_ERROR("Expected token type '%s' at %d:%d. Got '%s'\n", token_name(token_type), t.line, t.pos, token_name(t.type));
-        exit(1);
+        parser_panic(context);
+        return;
     }
     parser_advance(context);
 }
@@ -240,6 +276,11 @@ void parse_string(Token token, ParserContext *context) {
 void parse_bool(Token token, ParserContext *context) {
     if(token.type == TOKEN_TRUE) parser_emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 1 } }, context);
     else parser_emit_constant((Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 0 } }, context);
+}
+
+void parser_panic(ParserContext *context) {
+    context->panic = 1;
+    context->error++;
 }
 
 Token parser_peek(ParserContext *context) {

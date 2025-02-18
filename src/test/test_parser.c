@@ -3,6 +3,7 @@
 #include "uuc_test.h"
 
 void parser_test_case(TestResults *results, char *expecting, char *code);
+void parser_test_case_for_comp_error(TestResults *results, char *code);
 
 TestResults run_parser_test(int argc, const char *argv[]) {
     TestResults res = init_test_results(16);
@@ -60,17 +61,39 @@ TestResults run_parser_test(int argc, const char *argv[]) {
                            "var a = \"Hello\" + \"World\";");
     parser_test_case(&res, "( = a ( + \"Hello\" \"World\" ) )", 
                            "a = \"Hello\" + \"World\";");
-    parser_test_case(&res, "( = ( + a b ) ( + c d ) )", 
-                           "a + b = c + d;");
+    parser_test_case(&res, "( = a ( + c d ) )", 
+                           "a = c + d;");
+
+    parser_test_case_for_comp_error(&res, "a + b = 23;");
+    parser_test_case_for_comp_error(&res, "a +1= 23;");
+    parser_test_case_for_comp_error(&res, "+a= 23;");
     return res;
 }
 
 void parser_test_case(TestResults *results, char *expecting, char *code) {
     char buf[300];
     printf("Test parse input expression: '%s'\n", code);
-    Slice slice = parse_code(code);
+    Slice slice;
+    UucResult pr = parse_code(&slice, code);
+    if(pr != UUC_OK) {
+        assert_fail("Unexpected parsing result\n");
+        add_result(results, (TestResult){.result = FAIL});
+        return;
+    }
     slice_s_notation(&slice, buf, 300);
     printf("Result: %s\n", buf);
     int r = assert_str(expecting, buf);
     add_result(results, (TestResult){ .result = r ? FAIL : PASS });
+}
+
+void parser_test_case_for_comp_error(TestResults *results, char *code) {
+    printf("Test compilation error for input: '%s'\n", code);
+    Slice slice;
+    UucResult pr = parse_code(&slice, code);
+    if(pr != UUC_COMP_ERROR) {
+        assert_fail("Expected compilation error.\n");
+        add_result(results, (TestResult){.result = FAIL});
+        return;
+    }
+    add_result(results, (TestResult){ .result = PASS });
 }

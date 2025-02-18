@@ -3,6 +3,7 @@
 
 #include "uuc_lexer.h"
 #include "uuc_bytecode.h"
+#include "uuc_result.h"
 #include <stdint.h>
 
 typedef struct {
@@ -11,8 +12,10 @@ typedef struct {
     Token next_token;
     Token current_token;
     Token previous_token;
+    int panic;
+    int error;
 } ParserContext;
 
-Slice parse_code(char *code);
+UucResult parse_code(Slice *slice, char *code);
 
 #endif

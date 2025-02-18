@@ -32,8 +32,8 @@ class-decl  = "class", identifier, ( "<", identifier ) ?, "{", { fn-decl }, "}" 
 assignment  = ( call, "." ) ?, identifier, "=", expr-stmt ;
 expr-stmt  = assignment | expression ;
 expression = logic-or | ternary ;
-logic-or   = logic-and, { "|", logic-and } ;
-logic-and  = equality, { "&", equality } ;
+logic-or   = logic-and, { "||", logic-and } ;
+logic-and  = equality, { "&&", equality } ;
 ternary    = expression, "?", expression, ":", expression ;
 equality   = comparison, { ( "!=" | "==" ), comparison } ;
 comparison = term, { ( ">" | "<" | ">=" | "<=" ), term } ;

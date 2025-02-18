@@ -5,7 +5,7 @@
 #include "../include/uuc_vm.h"
 
 #define CREATE_TWOARG_FUN_DEF(op_name, cmp) \
-Value uuc_ ## op_name(Value left, Value right, ExeResult *r) { \
+Value uuc_ ## op_name(Value left, Value right, UucResult *r) { \
     UucType rt = right.type; \
     UucType lt = left.type;  \
     int res = -1; \
@@ -29,7 +29,7 @@ Value uuc_ ## op_name(Value left, Value right, ExeResult *r) { \
 }
 
 #define CREATE_TWOARG_FUN_DECL(op_name, cmp) \
-Value uuc_ ## op_name(Value left, Value right, ExeResult *r);
+Value uuc_ ## op_name(Value left, Value right, UucResult *r);
 
 CREATE_TWOARG_FUN_DECL(compare_eq, ==)
 CREATE_TWOARG_FUN_DECL(compare_ne, !=) 

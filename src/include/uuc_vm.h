@@ -3,13 +3,8 @@
 
 #include "uuc_bytecode.h"
 #include "uuc_val_table.h"
+#include "uuc_result.h"
 #include <stdint.h>
-
-typedef enum {
-    UUC_OK,
-    UUC_COMP_ERROR,
-    UUC_RUNTIME_ERROR,
-} ExeResult;
 
 typedef struct {
     Slice slice;
@@ -20,7 +15,7 @@ typedef struct {
 } VM;
 
 VM vm_init(Slice slice);
-ExeResult vm_run(VM *vm);
+UucResult vm_run(VM *vm);
 
 void uuc_vm_free(VM *vm);
 

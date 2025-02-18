@@ -10,7 +10,7 @@
 #define STRING_OBJ(str) (Value){ .type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)uuc_create_string(str) } }
 
 TestResult run_vm_test_case(Value expecting, char *code);
-TestResult run_vm_error_test_case(ExeResult expected_res, char *code);
+TestResult run_vm_error_test_case(UucResult expected_res, char *code);
 
 TestResults run_vm_test(int argc, const char *argv[]) {
     TestResults r = init_test_results(16);
@@ -86,12 +86,19 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "\"str\">\"stt\";"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "\"str\">23;"));
 
+    add_result(&r, run_vm_error_test_case(UUC_COMP_ERROR, "a + b = 23;"));
+
     return r;
 }
 
 TestResult run_vm_test_case(Value expecting, char *code) {
     printf("Test running expression: '%s'\n", code);
-    Slice slice = parse_code(code);
+    Slice slice;
+    UucResult pr = parse_code(&slice, code);
+    if(pr != UUC_OK) {
+        assert_fail("Unexpected parsing result\n");
+        return (TestResult){.result = FAIL};
+    }
     VM vm = vm_init(slice);
     vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
@@ -107,11 +114,16 @@ TestResult run_vm_test_case(Value expecting, char *code) {
     return (TestResult){ .result = PASS };
 }
 
-TestResult run_vm_error_test_case(ExeResult expected_res, char *code) {
+TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
-    Slice slice = parse_code(code);
+    Slice slice;
+    UucResult pr = parse_code(&slice, code);
+    if(pr != UUC_OK) {
+        assert_fail("Unexpected parsing result\n");
+        return (TestResult){.result = FAIL};
+    }
     VM vm = vm_init(slice);
-    ExeResult r = vm_run(&vm);
+    UucResult r = vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
     slice_print(&slice);
 #endif

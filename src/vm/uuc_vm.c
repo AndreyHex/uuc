@@ -6,16 +6,16 @@
 
 #include "uuc_vm_operations.h"
 
-ExeResult vm_tick(VM *vm);
+UucResult vm_tick(VM *vm);
 void vm_advance(VM *vm);
 int uuc_type_check(Value val, UucType type, const char *msg);
 int uuc_null_check(Value *val);
 int uuc_zero_division_check(Value divisor);
-Value uuc_op_add(Value left, Value right, ExeResult *r);
-Value uuc_op_substract(Value left, Value right, ExeResult *r);
-Value uuc_op_divide(Value divident, Value divisor, ExeResult *r);
-Value uuc_op_multiply(Value left, Value right, ExeResult *r);
-Value uuc_compare_eq(Value left, Value right, ExeResult *r);
+Value uuc_op_add(Value left, Value right, UucResult *r);
+Value uuc_op_substract(Value left, Value right, UucResult *r);
+Value uuc_op_divide(Value divident, Value divisor, UucResult *r);
+Value uuc_op_multiply(Value left, Value right, UucResult *r);
+Value uuc_compare_eq(Value left, Value right, UucResult *r);
 
 void uuc_vm_dump(VM *vm);
 
@@ -30,7 +30,7 @@ VM vm_init(Slice slice) {
     return vm;
 }
 
-ExeResult vm_run(VM *vm) { 
+UucResult vm_run(VM *vm) { 
     while(vm->ii < vm->slice.size) {
 #if defined (UUC_LOG_TRACE)
     list_print(&vm->slice.constants);
@@ -39,7 +39,7 @@ ExeResult vm_run(VM *vm) {
     stack_print(&vm->value_stack);
     uuc_vm_dump(vm);
     #endif
-        ExeResult r = vm_tick(vm);
+        UucResult r = vm_tick(vm);
         if(r) return r;
         vm_advance(vm);
     }
@@ -59,13 +59,13 @@ Value a = stack_pop(stack); \
 if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR; \
 stack_push(stack, fun_name(a, b, &r)); } while(0);
 
-ExeResult vm_tick(VM *vm) {
+UucResult vm_tick(VM *vm) {
     uint8_t ip = *vm->ip;
     Values *stack = &vm->value_stack;
     Values *constants = &vm->slice.constants;
     UucValTable *globals = &vm->global_table;
 
-    ExeResult r = UUC_OK;
+    UucResult r = UUC_OK;
     switch(ip) {
         case OP_CONSTANT: {
             vm_advance(vm);
@@ -152,7 +152,7 @@ ExeResult vm_tick(VM *vm) {
 #undef execute_operation
 
 // plz send help
-Value uuc_op_add(Value left, Value right, ExeResult *r) {
+Value uuc_op_add(Value left, Value right, UucResult *r) {
     if(left.type == TYPE_OBJ && left.as.uuc_obj->type == OBJ_STRING &&
        right.type == TYPE_OBJ && right.as.uuc_obj->type == OBJ_STRING) {
         UucString *s = (UucString*)left.as.uuc_obj;
@@ -186,7 +186,7 @@ Value uuc_op_add(Value left, Value right, ExeResult *r) {
     return uuc_val_null();
 }
 
-Value uuc_op_substract(Value left, Value right, ExeResult *r) {
+Value uuc_op_substract(Value left, Value right, UucResult *r) {
     if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Cannot substract type '%s' from type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
@@ -212,7 +212,7 @@ Value uuc_op_substract(Value left, Value right, ExeResult *r) {
     return uuc_val_null();
 }
 
-Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
+Value uuc_op_multiply(Value left, Value right, UucResult *r) {
     if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Type '%s' cannot be multiplied by type '%s'.\n", uuc_type_str(left.type), uuc_type_str(right.type));
@@ -238,7 +238,7 @@ Value uuc_op_multiply(Value left, Value right, ExeResult *r) {
     return uuc_val_null();
 }
 
-Value uuc_op_divide(Value divident, Value divisor, ExeResult *r) {
+Value uuc_op_divide(Value divident, Value divisor, UucResult *r) {
     if((divident.type != TYPE_INT && divident.type != TYPE_DOUBLE) ||
        (divisor.type != TYPE_INT && divisor.type != TYPE_DOUBLE)) {
         LOG_ERROR("Type '%s' cannot be divided by type '%s'.\n", uuc_type_str(divident.type), uuc_type_str(divisor.type));
