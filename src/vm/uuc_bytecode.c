@@ -16,7 +16,9 @@ Slice slice_init(uint32_t init_capacity) {
     return (Slice) {
         .size = 0,
         .capacity = init_capacity,
-        .codes = codes
+        .codes = codes,
+        .constants = list_init(16),
+        .names = list_init(16),
     };
 }
 
@@ -30,18 +32,22 @@ void slice_push_code(OpCode code, Slice *slice) {
     slice->size++;
 }
 
+uint64_t slice_register_name(Value name, Slice *slice) {
+    return list_push(&slice->names, name);
+}
+
 uint64_t slice_register_constant(Value value, Slice *slice) {
+    return list_push(&slice->constants, value);
+}
+
+uint64_t slice_push_constant(Value value, Slice *slice) {
+    uint64_t index = slice_register_constant(value, slice);
     if(slice->size + 3 >= slice->capacity) { // + 3 instruction potentially
         size_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %ld\n", slice->capacity, new_cap);
         slice->codes = INCREASE_ARRAY(uint8_t, slice->codes, slice->capacity, new_cap);
         slice->capacity = new_cap;
     }
-    return list_push(&slice->constants, value);
-}
-
-uint64_t slice_push_constant(Value value, Slice *slice) {
-    uint64_t index = slice_register_constant(value, slice);
     OpCode code;
     if(index <= UINT8_MAX) {
         LOG_TRACE("Pushing OP_CONSTANT code\n");
@@ -110,7 +116,7 @@ const char *op_code_names[] = {
 
     "OP_DEFINE_GLOBAL",
     "OP_GET_GLOBAL",
-    "OP_ASSIGN",
+    "OP_SET_GLOBAL",
 
     "OP_TRUE",
     "OP_FALSE",

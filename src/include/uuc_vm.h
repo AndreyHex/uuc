@@ -2,6 +2,7 @@
 #define uuc_vm_h
 
 #include "uuc_bytecode.h"
+#include "uuc_type.h"
 #include "uuc_val_table.h"
 #include "uuc_result.h"
 #include <stdint.h>

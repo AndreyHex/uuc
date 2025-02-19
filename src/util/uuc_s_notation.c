@@ -36,7 +36,7 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
         } else if(code == OP_DEFINE_GLOBAL) {
             i++;
             int index = slice->codes[i];
-            UucString *name = (UucString *)slice->constants.head[index].as.uuc_obj;
+            UucString *name = (UucString *)slice->names.head[index].as.uuc_obj;
             s_size--;
             char *a = &stack[s_size * buf_s];
             sprintf(bb, "( var %s %s )", name->content, a);
@@ -45,7 +45,7 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
         } else if(code == OP_GET_GLOBAL) {
             i++;
             int index = slice->codes[i];
-            UucString *name = (UucString *)slice->constants.head[index].as.uuc_obj;
+            UucString *name = (UucString *)slice->names.head[index].as.uuc_obj;
             sprintf(&stack[s_size * buf_s], "%s", name->content);
             s_size++;
         } else if(code == OP_TRUE || code == OP_FALSE) {
@@ -54,7 +54,7 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
         } else if(code == OP_NULL) {
             sprintf(&stack[s_size * buf_s], "%s", "null");
             s_size++;
-        } else if((code >= OP_ADD && code <= OP_LTE) || code == OP_ASSIGN) {
+        } else if((code >= OP_ADD && code <= OP_LTE) || code == OP_SET_GLOBAL) {
             s_size--;
             char *a = &stack[s_size * buf_s];
             s_size--;
@@ -76,7 +76,7 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
 
 const char *opcode_op_char(OpCode opcode) {
     switch(opcode) {
-        case OP_ASSIGN: return "=";
+        case OP_SET_GLOBAL: return "=";
         case OP_ADD: return "+";
         case OP_SUBSTRACT: return "-";
         case OP_MULTIPLY: return "*";

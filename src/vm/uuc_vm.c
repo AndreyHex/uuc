@@ -63,6 +63,7 @@ UucResult vm_tick(VM *vm) {
     uint8_t ip = *vm->ip;
     Values *stack = &vm->value_stack;
     Values *constants = &vm->slice.constants;
+    Values *names = &vm->slice.names;
     UucValTable *globals = &vm->global_table;
 
     UucResult r = UUC_OK;
@@ -83,7 +84,7 @@ UucResult vm_tick(VM *vm) {
         case OP_DEFINE_GLOBAL: {
             vm_advance(vm);
             uint8_t index = *vm->ip;
-            UucString *name = (UucString *)list_get(constants, index).as.uuc_obj;
+            UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
             Value val = stack_peek(stack);
             uuc_val_table_put(globals, name, val);
             stack_pop(stack);
@@ -92,7 +93,7 @@ UucResult vm_tick(VM *vm) {
         case OP_GET_GLOBAL: {
             vm_advance(vm);
             uint8_t index = *vm->ip;
-            UucString *name = (UucString *)list_get(constants, index).as.uuc_obj;
+            UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
             Value val;
             int r = uuc_val_table_get(globals, name, &val);
             if(r == 0) {
@@ -102,7 +103,7 @@ UucResult vm_tick(VM *vm) {
             stack_push(stack, val);
             break;
         }
-        case OP_ASSIGN: {
+        case OP_SET_GLOBAL: {
             LOG_ERROR(" wip wip wip \n");
             return UUC_RUNTIME_ERROR;
         }
@@ -308,6 +309,8 @@ void uuc_vm_dump(VM *vm) {
     printf(" Instructions: %d\n", slice->size - slice->constants.size);
     printf(" Constants:\n  ");
     list_print(&vm->slice.constants);
+    printf(" Names:\n  ");
+    list_print(&vm->slice.names);
     printf("============ Globals ============\n");
     uuc_val_table_dump(&vm->global_table);
     printf("============ Content ============\n");

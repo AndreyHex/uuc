@@ -125,7 +125,7 @@ uint16_t parse_identifier(ParserContext *context) {
     Token t = parser_peek(context);
     parser_consume(TOKEN_IDENTIFIER, context);
     UucString *s = uuc_copy_string(t.start, t.length);
-    return slice_register_constant(uuc_val_string_obj(s), &context->bytecode);
+    return slice_register_name(uuc_val_string_obj(s), &context->bytecode);
 }
 
 void parse_statement(ParserContext *context) {
@@ -232,7 +232,7 @@ void parse_binary(int can_assign, ParserContext *context) {
         case TOKEN_GREATER_EQUAL: parser_emit_opcode(OP_GTE, context); break;
         case TOKEN_LESS: parser_emit_opcode(OP_LT, context); break;
         case TOKEN_LESS_EQUAL: parser_emit_opcode(OP_LTE, context); break;
-        case TOKEN_EQUAL: parser_emit_opcode(OP_ASSIGN, context); break;
+        case TOKEN_EQUAL: parser_emit_opcode(OP_SET_GLOBAL, context); break;
         default: LOG_ERROR("Unsupported binary operator '%s' at %d:%d\n", token_name(op.type), op.line, op.pos);
     }
 }
