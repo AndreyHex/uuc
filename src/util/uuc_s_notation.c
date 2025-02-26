@@ -33,13 +33,14 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
                 default: break;
             }
             s_size++;
-        } else if(code == OP_DEFINE_GLOBAL) {
+        } else if(code == OP_DEFINE_GLOBAL || code == OP_SET_GLOBAL) {
             i++;
             int index = slice->codes[i];
             UucString *name = (UucString *)slice->names.head[index].as.uuc_obj;
             s_size--;
             char *a = &stack[s_size * buf_s];
-            sprintf(bb, "( var %s %s )", name->content, a);
+            if(code == OP_DEFINE_GLOBAL) sprintf(bb, "( var %s %s )", name->content, a);
+            else sprintf(bb, "( = %s %s )", name->content, a);
             memcpy(&stack[s_size * buf_s], bb, buf_s);
             s_size++;
         } else if(code == OP_GET_GLOBAL) {

@@ -97,7 +97,7 @@ void slice_print(Slice *slice) {
             UucString *key = (UucString*)key_v.as.uuc_obj;
             printf("%s", key->content);
             i++;
-        } else if(code == OP_GET_GLOBAL) {
+        } else if(code == OP_GET_GLOBAL || code == OP_SET_GLOBAL) {
             uint8_t index = slice->codes[i + 1];
             printf("%3d:%s index:%d", code, opcode_name(code), index);
             i++;

@@ -19,7 +19,7 @@ Value uuc_compare_eq(Value left, Value right, UucResult *r);
 
 void uuc_vm_dump(VM *vm);
 
-VM vm_init(Slice slice) {
+VM uuc_vm_init(Slice slice) {
     VM vm = {
         .slice = slice,
         .ip = slice.codes,
@@ -30,7 +30,7 @@ VM vm_init(Slice slice) {
     return vm;
 }
 
-UucResult vm_run(VM *vm) { 
+UucResult uuc_vm_run(VM *vm) { 
     while(vm->ii < vm->slice.size) {
 #if defined (UUC_LOG_TRACE)
     list_print(&vm->slice.constants);
@@ -104,7 +104,16 @@ UucResult vm_tick(VM *vm) {
             break;
         }
         case OP_SET_GLOBAL: {
-            LOG_ERROR(" wip wip wip \n");
+            vm_advance(vm);
+            uint8_t index = *vm->ip;
+            UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
+            Value val;
+            int r = uuc_val_table_get(globals, name, &val);
+            if(r == 0) {
+                LOG_ERROR("Undefined variable '%s'\n", name->content);
+                return UUC_RUNTIME_ERROR;
+            }
+            uuc_val_table_put(globals, name, stack_pop(stack));
             return UUC_RUNTIME_ERROR;
         }
         case OP_NOT: {
@@ -329,17 +338,20 @@ void uuc_vm_dump(VM *vm) {
         } else if(code == OP_DEFINE_GLOBAL) {
             printf("%3d:%s  ", code, opcode_name(code));
             uint8_t index = slice->codes[i + 1];
-            Value key_v = slice->constants.head[index];
-            UucString *key = (UucString*)key_v.as.uuc_obj;
-            printf("%s = ", key->content);
+            Value name_v = slice->names.head[index];
+            UucString *name = (UucString*)name_v.as.uuc_obj;
+            printf("%s = ", name->content);
             Value val;
-            int r = uuc_val_table_get(&vm->global_table, key, &val);
-            if(1) uuc_val_print(val);
+            int r = uuc_val_table_get(&vm->global_table, name, &val);
+            if(r) uuc_val_print(val);
             else uuc_val_print(uuc_val_null());
             i++;
         } else if(code == OP_GET_GLOBAL) {
             uint8_t index = slice->codes[i + 1];
             printf("%3d:%s index:%d", code, opcode_name(code), index);
+            i++;
+        } else if(code == OP_SET_GLOBAL) {
+            printf("%3d:%s", code, opcode_name(code));
             i++;
         } else {
             printf("%3d:%s", code, opcode_name(code));

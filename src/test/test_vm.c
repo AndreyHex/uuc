@@ -15,51 +15,53 @@ TestResult run_vm_error_test_case(UucResult expected_res, char *code);
 TestResults run_vm_test(int argc, const char *argv[]) {
     TestResults r = init_test_results(16);
 
-    add_result(&r, run_vm_test_case(INT_VAL(26), "1 + (2 + 3) * 4 + 5;"));
-    add_result(&r, run_vm_test_case(INT_VAL(18), "3*(3+3);"));
-    add_result(&r, run_vm_test_case(INT_VAL(11), "3*3+2;"));
-    add_result(&r, run_vm_test_case(INT_VAL(0), "-(-(2*1+-2));"));
-    add_result(&r, run_vm_test_case(INT_VAL(2), "4/2;"));
-    add_result(&r, run_vm_test_case(INT_VAL(1), "4/2/2;"));
-    add_result(&r, run_vm_test_case(INT_VAL(2), "4/2/2*2;"));
-    add_result(&r, run_vm_test_case(INT_VAL(-2), "2-4;"));
-    add_result(&r, run_vm_test_case(INT_VAL(-8), "2-4-6;"));
-    add_result(&r, run_vm_test_case(INT_VAL(4), "2*2*2/2;"));
-    add_result(&r, run_vm_test_case(INT_VAL(-462), "2*2*2/2-3-4-5-3+4+2+2+5+5*5/6*9*8*8/9-9+6+5*5-8*6-5-4-4/4*5-4-4*4*/*4-4-5-5*7*4/*4*4*4-5-5*4-4-5-4-5;"));
+    add_result(&r, run_vm_test_case(INT_VAL(26), "var a = 1 + (2 + 3) * 4 + 5;"));
+    add_result(&r, run_vm_test_case(INT_VAL(18), "var a = 3*(3+3);"));
+    add_result(&r, run_vm_test_case(INT_VAL(11), "var a = 3*3+2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(0), "var a = -(-(2*1+-2));"));
+    add_result(&r, run_vm_test_case(INT_VAL(2), "var a = 4/2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 4/2/2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(2), "var a = 4/2/2*2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(-2), "var a = 2-4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(-8), "var a = 2-4-6;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2*2*2/2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(-8862), "var a = 2*2*2/2-3-4-5-3+4+2+2+5+5*5/6*9*8*8/9-9+6+5*5-8*6-5-4-4/4*5-4-4*4*4-4-5-5*7*4*4*4*4-5-5*4-4-5-4-5;"));
 
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "2==2;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "2==2.1;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "2==3;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "2!=3;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "2!=2;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "true!=false;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "!true!=false;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2; a = a+2;"));
 
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "true>true;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "false>false;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "true>false;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "true>=false;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "true<false;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "true<=false;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = 2==2;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = 2==2.1;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = 2==3;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = 2!=3;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = 2!=2;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = true!=false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = !true!=false;"));
 
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "2<=2.4;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "2<=2;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "3>=4;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "3>4;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = true>true;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = false>false;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = true>false;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = true>=false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = true<false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = true<=false;"));
 
-    add_result(&r, run_vm_test_case(DOUBLE_VAL(0.25), "1/4.0;"));
-    add_result(&r, run_vm_test_case(DOUBLE_VAL(4.0), "1*4.0;"));
-    add_result(&r, run_vm_test_case(DOUBLE_VAL(3.0), "1.0+2;"));
-    add_result(&r, run_vm_test_case(DOUBLE_VAL(-0.5), "1-1.5;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = 2<=2.4;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = 2<=2;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = 3>=4;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = 3>4;"));
 
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "true;"));
-    add_result(&r, run_vm_test_case(BOOL_TRUE, "!false;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "false;"));
-    add_result(&r, run_vm_test_case(BOOL_FALSE, "!true;"));
+    add_result(&r, run_vm_test_case(DOUBLE_VAL(0.25), "var a = 1/4.0;"));
+    add_result(&r, run_vm_test_case(DOUBLE_VAL(4.0), "var a = 1*4.0;"));
+    add_result(&r, run_vm_test_case(DOUBLE_VAL(3.0), "var a = 1.0+2;"));
+    add_result(&r, run_vm_test_case(DOUBLE_VAL(-0.5), "var a = 1-1.5;"));
 
-    add_result(&r, run_vm_test_case(STRING_OBJ("test"), "\"test\";"));
-    add_result(&r, run_vm_test_case(STRING_OBJ("tt"), "\"t\"+\"t\";"));
-    add_result(&r, run_vm_test_case(STRING_OBJ("HelloWorld!!!"), "\"Hello\"+\"World\"+\"!!!\";"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = true;"));
+    add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = !false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = false;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = !true;"));
+
+    add_result(&r, run_vm_test_case(STRING_OBJ("test"), "var a = \"test\";"));
+    add_result(&r, run_vm_test_case(STRING_OBJ("tt"), "var a = \"t\"+\"t\";"));
+    add_result(&r, run_vm_test_case(STRING_OBJ("HelloWorld!!!"), "var a = \"Hello\"+\"World\"+\"!!!\";"));
 
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2*true*2/2;"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2/0;"));
@@ -88,6 +90,7 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 
     add_result(&r, run_vm_error_test_case(UUC_COMP_ERROR, "a + b = 23;"));
 
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2; a = a+2;"));
     return r;
 }
 
@@ -99,12 +102,19 @@ TestResult run_vm_test_case(Value expecting, char *code) {
         assert_fail("Unexpected parsing result\n");
         return (TestResult){.result = FAIL};
     }
-    VM vm = vm_init(slice);
-    vm_run(&vm);
+    VM vm = uuc_vm_init(slice);
+    uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
-    slice_print(&slice);
+    uuc_vm_dump(&vm);
 #endif
-    Value r = stack_peek(&vm.value_stack);
+    Value r; 
+    UucString *a = uuc_create_string("a");
+    int res = uuc_val_table_get(&vm.global_table, a, &r);
+    if(res != 1) {
+        assert_fail("Global variable 'a' not found.");
+        return (TestResult){ .result = FAIL };
+    }
+    uuc_free_string(a);
     printf(" => ");
     uuc_val_print(r);
     printf("\n");
@@ -118,12 +128,12 @@ TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
     Slice slice;
     UucResult pr = parse_code(&slice, code);
-    if(pr != UUC_OK) {
-        assert_fail("Unexpected parsing result\n");
+    if(expected_res == UUC_COMP_ERROR && pr == UUC_OK) {
+        assert_fail("Expected compile error.");
         return (TestResult){.result = FAIL};
     }
-    VM vm = vm_init(slice);
-    UucResult r = vm_run(&vm);
+    VM vm = uuc_vm_init(slice);
+    UucResult r = uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
     slice_print(&slice);
 #endif

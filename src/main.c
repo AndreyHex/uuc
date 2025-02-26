@@ -9,8 +9,8 @@ int main(int argc, const char *argv[]) {
     printf("hello\n");
     Slice slice;
     UucResult r = parse_code(&slice, "var a = 1; var b = 2; var c = a + b;");
-    VM vm = vm_init(slice);
-    UucResult vmr = vm_run(&vm);
+    VM vm = uuc_vm_init(slice);
+    UucResult vmr = uuc_vm_run(&vm);
     uuc_vm_dump(&vm);
     return 0;
 }

@@ -11,7 +11,6 @@
 void parse_declaration(ParserContext *context);
 void parse_var_declaration(ParserContext *context);
 void parse_statement(ParserContext *context);
-void parse_assignment(ParserContext *context);
 void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
 uint16_t parse_identifier(ParserContext *context);
@@ -22,26 +21,30 @@ void parse_number(Token token, ParserContext *context);
 void parse_string(Token token, ParserContext *context);
 void parse_bool(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
+void parse_block(ParserContext *context);
+
+// begins new scope
+void parser_scope_begin(ParserContext *context);
+// ends scope
+void parser_scope_end(ParserContext *context);
 
 void parser_advance(ParserContext *context);
 // returns current token
 Token parser_peek(ParserContext *context);
 // returns previous token
 Token parser_prev(ParserContext *context);
-
 // checks token for math with current and advances
 // or exits with error
 void parser_consume(TokenType token_type, ParserContext *context);
-
 // returns index in constant list from bytecode slice
 uint64_t parser_emit_constant(Value value, ParserContext *context);
 void parser_emit_opcode(OpCode code, ParserContext *context);
-
-// match token_type with current token in context
+// matches token_type with current token in context
 int parser_match(TokenType token_type, ParserContext *context);
-
-void parser_synchronize(ParserContext *context);
+// enters panic mode
 void parser_panic(ParserContext *context);
+// skips tokens until point of synchronization 
+void parser_synchronize(ParserContext *context);
 
 Token next(ParserContext *context) {
     return next_token(&context->lexer_context);
@@ -56,6 +59,8 @@ UucResult parse_code(Slice *slice, char *code) {
         .previous_token = {0},
         .panic = 0,
         .error = 0,
+        .local_size = 0,
+        .scope_depth = 0,
     };
     parser_advance(&context);
 
@@ -109,21 +114,21 @@ void parse_var_declaration(ParserContext *context) {
     }
     parser_consume(TOKEN_SEMICOLON, context);
 
+    if(context->scope_depth > 0) return;
     parser_emit_opcode(OP_DEFINE_GLOBAL, context);
-    parser_emit_opcode(index, context);
-}
-
-void parse_assignment(ParserContext *context) {
-    uint16_t index = parse_identifier(context);
-    parser_consume(TOKEN_EQUAL, context);
-    parse_expression(context);
-    // parser_emit_opcode(OP_SET_GLOBAL, context);
     parser_emit_opcode(index, context);
 }
 
 uint16_t parse_identifier(ParserContext *context) {
     Token t = parser_peek(context);
     parser_consume(TOKEN_IDENTIFIER, context);
+    if(context->scope_depth > 0) {
+        context->locals[context->local_size++] = (ParserLocal){
+            .name = t,
+            .depth = context->scope_depth,
+        };
+        return 0;
+    }
     UucString *s = uuc_copy_string(t.start, t.length);
     return slice_register_name(uuc_val_string_obj(s), &context->bytecode);
 }
@@ -134,10 +139,29 @@ void parse_statement(ParserContext *context) {
         case TOKEN_IF: printf("if\n"); break;
         case TOKEN_WHILE: printf("while\n"); break;
         case TOKEN_FOR: printf("for\n"); break;
-        case TOKEN_RBRACE: printf("{\n"); break;
+        case TOKEN_RBRACE: parse_block(context); break;
         case TOKEN_RETURN: printf("return\n"); break;
         default: parse_expression_statement(context);
     }
+}
+
+void parse_block(ParserContext *context) {
+    parser_scope_begin(context);
+    Token t = parser_peek(context);
+    while(t.type != TOKEN_LBRACE && t.type != TOKEN_EOF) {
+        parse_declaration(context);
+        t = parser_peek(context);
+    }
+    parser_consume(TOKEN_LBRACE, context);
+    parser_scope_end(context);
+}
+
+void parser_scope_begin(ParserContext *context) {
+    context->scope_depth++;
+}
+
+void parser_scope_end(ParserContext *context) {
+    context->scope_depth--;
 }
 
 void parse_expression_statement(ParserContext *context) {
@@ -182,6 +206,13 @@ void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context) {
         case TOKEN_LPAREN: parse_grouping(context); break;
         case TOKEN_IDENTIFIER: {
             uint8_t index = parse_identifier(context);
+            if(parser_peek(context).type == TOKEN_EQUAL && can_assign) {
+                parser_consume(TOKEN_EQUAL, context);
+                parse_precedence(0, 1, context);
+                parser_emit_opcode(OP_SET_GLOBAL, context);
+                parser_emit_opcode(index, context);
+                return;
+            }
             parser_emit_opcode(OP_GET_GLOBAL, context);
             parser_emit_opcode(index, context);
             break;
@@ -190,12 +221,12 @@ void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context) {
     }
 
     Token op = parser_peek(context);
-    if(op.type != TOKEN_EQUAL) can_assign = 0;
-    else if(can_assign == 0) {
+    if(op.type == TOKEN_EQUAL && can_assign == 0) {
         LOG_ERROR("Cannot assign to expression at %d:%d.\n", op.line, op.pos);
         parser_panic(context);
         return;
     }
+    if(op.type != TOKEN_EQUAL) can_assign = 0;
     LOG_TRACE("parse_precedence token op: %s precedence: %d min_p: %d can_assign: %d position: %d:%d\n", token_name(op.type), precedence(op.type), min_p, can_assign, op.line, op.pos);
     while(precedence(op.type) > min_p) {
         parse_binary(can_assign, context);
@@ -207,7 +238,7 @@ void parse_unary(int can_assign, ParserContext *context) {
     can_assign = 0;
     Token op = parser_peek(context);
     parser_advance(context);
-    // prefix binding is stronger for '-' as example
+    // prefix binding is stronger for '-' for example
     parse_precedence(can_assign, precedence(op.type) + 6, context);     
     switch(op.type) {
         case TOKEN_MINUS: parser_emit_opcode(OP_NEGATE, context); break;

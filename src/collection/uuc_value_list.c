@@ -13,6 +13,7 @@ ValueList list_init(uint32_t initial_capacity) {
 
 Value list_get(ValueList *list, uint32_t index) {
     if (list->size <= index) {
+        list_print(list);
         LOG_ERROR("Index out of bound! List size: %d. Index: %d\n", list->size,
                   index);
         exit(1);

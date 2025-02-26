@@ -24,6 +24,7 @@ TestCase test_cases[] = {
     {"\"st\\\"ring\"", {TOKEN_STRING}, 1},
     {"\"st\\\"ring\"+\"!\"+\".\"", {TOKEN_STRING, TOKEN_PLUS, TOKEN_STRING, TOKEN_PLUS, TOKEN_STRING}, 5},
     {"(", {TOKEN_LPAREN}, 1},
+    {";;;", {TOKEN_SEMICOLON, TOKEN_SEMICOLON, TOKEN_SEMICOLON}, 3},
 
     // var and identifiers
     {"var identifier =", {TOKEN_VAR, TOKEN_IDENTIFIER, TOKEN_EQUAL}, 3},

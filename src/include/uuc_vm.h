@@ -15,8 +15,8 @@ typedef struct {
     UucValTable global_table;
 } VM;
 
-VM vm_init(Slice slice);
-UucResult vm_run(VM *vm);
+VM uuc_vm_init(Slice slice);
+UucResult uuc_vm_run(VM *vm);
 
 void uuc_vm_free(VM *vm);
 
