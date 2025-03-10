@@ -4,6 +4,7 @@
 #include "../include/uuc_string.h"
 
 #define INT_VAL(v) (Value){ .type = TYPE_INT, .as = { .uuc_int = v } }
+#define NULL_VAL (Value){ .type = TYPE_NULL, .as = {0} }
 #define DOUBLE_VAL(v) (Value){ .type = TYPE_DOUBLE, .as = { .uuc_double = v } }
 #define BOOL_TRUE (Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 1 } }
 #define BOOL_FALSE (Value){ .type = TYPE_BOOL, .as = { .uuc_bool = 0 } }
@@ -92,8 +93,29 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 
     // if
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(true) { a = 4; }"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(false) { a = 4; }"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(2 > 1) { a = 4; }"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(2 == 1) { a = 4; }"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(true) a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(0) a = 4;"));
     // if -> runtime error
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "var a = 1; if(\"string\") { a = 4; }"));
+
+    // if else
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a; if(1) a = 1; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(0) a = 1; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a; if(true) a = 1; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) a = 1; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a; if(1) {a = 1;} else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(0) a = 1; else {a = 4;}"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a; if(true) {a = 1;} else {a = 4;}"));
+    add_result(&r, run_vm_test_case(NULL_VAL, "var a; if(false) {a = 1;} else { if(false)a = 4;}"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) {a = 1;} else { if(2 > 1)a = 4;}"));
+    add_result(&r, run_vm_test_case(INT_VAL(2), "var a; if(0) a = 1; else if(true) a = 2; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(0) a = 1; else if(false) a = 2; else a = 4;"));
+
+    // TODO: == with null
+    //add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) {a = 1;} else { if(a == null)a = 4;}"));
     
     return r;
 }
@@ -103,11 +125,15 @@ TestResult run_vm_test_case(Value expecting, char *code) {
     Slice slice;
     UucResult pr = parse_code(&slice, code);
     if(pr != UUC_OK) {
-        assert_fail("Unexpected parsing result\n");
+        assert_fail("Unexpected parsing result.");
         return (TestResult){.result = FAIL};
     }
     VM vm = uuc_vm_init(slice);
-    uuc_vm_run(&vm);
+    UucResult vm_r = uuc_vm_run(&vm);
+    if(vm_r == UUC_RUNTIME_ERROR) {
+        assert_fail("Unexpected runtime error.");
+        return (TestResult){.result = FAIL};
+    }
 #if defined(UUC_LOG_TRACE)
     uuc_vm_dump(&vm);
 #endif
@@ -140,7 +166,7 @@ TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     VM vm = uuc_vm_init(slice);
     UucResult r = uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
-    slice_print(&slice);
+    uuc_vm_dump(&vm);
 #endif
     if(r == 0) {
         printf("\033[31mAssertion error: expected runtime error for input '%s'\033[m\n", code);
@@ -150,6 +176,7 @@ TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
 }
 
 #undef INT_VAL
+#undef NULL_VAL 
 #undef DOUBLE_VAL
 #undef BOOL_TRUE 
 #undef BOOL_FALSE 

@@ -35,15 +35,20 @@ UucResult uuc_vm_run(VM *vm) {
 #if defined (UUC_LOG_TRACE)
     list_print(&vm->slice.constants);
 #endif
-    #if defined (UUC_LOG_TRACE)
+#if defined (UUC_LOG_TRACE)
     stack_print(&vm->value_stack);
     uuc_vm_dump(vm);
-    #endif
+#endif
         UucResult r = vm_tick(vm);
         if(r) return r;
         vm_advance(vm);
     }
     return UUC_OK;
+}
+
+void vm_advance_for(VM *vm, uint32_t offset) {
+    vm->ip += offset;
+    vm->ii += offset;
 }
 
 void vm_advance(VM *vm) {
@@ -77,7 +82,7 @@ UucResult vm_tick(VM *vm) {
         case OP_CONSTANT_16: {
             uint8_t left = 000; // next index 
             uint8_t right = 000; // next next index byte
-            uint16_t index = left | (right << 8);
+            uint16_t index = right | (left << 8);
             stack_push(stack, list_get(constants, index));
             break;
         }
@@ -114,7 +119,7 @@ UucResult vm_tick(VM *vm) {
                 return UUC_RUNTIME_ERROR;
             }
             uuc_val_table_put(globals, name, stack_pop(stack));
-            return UUC_RUNTIME_ERROR;
+            break;
         }
         case OP_NOT: {
             Value v = stack_pop(stack);
@@ -155,7 +160,7 @@ UucResult vm_tick(VM *vm) {
                 case TYPE_INT: r = v.as.uuc_int; break;
                 case TYPE_DOUBLE: r = v.as.uuc_int; break;
                 default: {
-                    LOG_ERROR("Type '%s' cannot be casted to boolean", uuc_type_str(v.type));
+                    LOG_ERROR("Type '%s' cannot be casted to boolean\n", uuc_type_str(v.type));
                     return UUC_RUNTIME_ERROR;
                 }
             }
@@ -165,13 +170,21 @@ UucResult vm_tick(VM *vm) {
                 vm_advance(vm);
             } else {
                 vm_advance(vm);
-                uint8_t left = *vm->ip; // next index 
+                uint8_t left = *vm->ip;
                 vm_advance(vm);
-                uint8_t right = *vm->ip; // next next index byte
-                uint16_t jump_offset = left | (right << 8);
-                vm->ip += jump_offset;
+                uint8_t right = *vm->ip;
+                uint16_t jump_offset = right | (left << 8);
+                vm_advance_for(vm, jump_offset);
             }
-            
+            break;
+        }
+        case OP_JUMP: {
+            vm_advance(vm);
+            uint8_t left = *vm->ip;
+            vm_advance(vm);
+            uint8_t right = *vm->ip;
+            uint16_t jump_offset = right | (left << 8);
+            vm_advance_for(vm, jump_offset);
             break;
         }
         case OP_RETURN: {
@@ -384,6 +397,12 @@ void uuc_vm_dump(VM *vm) {
         } else if(code == OP_SET_GLOBAL) {
             printf("%3d:%s", code, opcode_name(code));
             i++;
+        } else if(code == OP_JUMP || code == OP_JUMP_IF_FALSE) {
+            uint8_t left = slice->codes[i + 1];
+            uint8_t right = slice->codes[i + 2];
+            uint16_t jump_offset = right | (left << 8);
+            printf("%3d:%s to %d", code, opcode_name(code), i + jump_offset);
+            i += 2;
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }

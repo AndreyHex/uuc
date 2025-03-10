@@ -9,7 +9,6 @@ const char *opcode_op_char(OpCode opcode);
 // create string epression in s-notation (polish) for testing puproses
 // expecting single expression in slice
 void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
-    slice_print(slice);
     char *bb = malloc(buf_s * sizeof(char));
     int s_cap = 32;
     int s_size = 0;

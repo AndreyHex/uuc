@@ -34,6 +34,7 @@ void run_val_table_test_insert_remove_alot_(TestResults *r) {
     printf("Test hashtable, inserted: %d -- %s\n", i, a ? "" : "passed");
     uuc_val_table_summary_dump(&table);
     if(a) {
+        assert_fail("Hash table test fail :37");
         add_result(r, (TestResult){.result = FAIL});
         uuc_val_table_free(&table);
         return;
@@ -58,11 +59,6 @@ void run_val_table_test_insert_remove_alot_(TestResults *r) {
 
 int val_table_test_fail_(TestResults *r, char *msg) {
     assert_fail(msg);
-    add_result(r, (TestResult){ .result = FAIL});
-    return 0;
-}
-
-int val_table_test_fail__(TestResults *r) {
     add_result(r, (TestResult){ .result = FAIL});
     return 0;
 }
@@ -182,6 +178,9 @@ int run_val_table_test_put_remove_(TestResults *r) {
     uuc_val_table_dump(&table);
 #endif
     rr += assert_integer(4, table.size);
+    if(rr) {
+        assert_fail("Hash table.");
+    }
     add_result(r, (TestResult){ .result = rr ? FAIL : PASS});
     uuc_val_table_free(&table);
     return 0;

@@ -41,7 +41,7 @@ void parser_consume(TokenType token_type, ParserContext *context);
 uint64_t parser_emit_constant(Value value, ParserContext *context);
 void parser_emit_opcode(OpCode code, ParserContext *context);
 
-uint64_t parser_emit_jump(ParserContext *context);
+uint64_t parser_emit_jump(OpCode jump_op, ParserContext *context);
 void parser_update_jump(uint64_t index, uint16_t length, ParserContext *context);
 
 // matches token_type with current token in context
@@ -156,12 +156,23 @@ void parse_if(ParserContext *context) {
     parse_expression(context);
     parser_consume(TOKEN_RPAREN, context);
 
-    uint64_t index = parser_emit_jump(context);
-    uint32_t p_size = context->bytecode.size;
+    uint64_t index = parser_emit_jump(OP_JUMP_IF_FALSE, context);
+    uint32_t start_if = context->bytecode.size;
     parse_statement(context);
     
-    uint32_t size = context->bytecode.size;
-    parser_update_jump(index, size - p_size + 1, context);
+    uint64_t else_index = 0;
+    if(parser_match(TOKEN_ELSE, context)) {
+        parser_consume(TOKEN_ELSE, context);
+        else_index = parser_emit_jump(OP_JUMP, context);
+    }
+    uint32_t end_if = context->bytecode.size;
+    parser_update_jump(index, end_if - start_if, context);
+    if(else_index) {
+        uint32_t start_else = context->bytecode.size;
+        parse_statement(context);
+        uint32_t else_len = context->bytecode.size - start_else; 
+        parser_update_jump(else_index, else_len, context);
+    }
 }
 
 void parse_block(ParserContext *context) {
@@ -350,10 +361,10 @@ void parser_emit_opcode(OpCode code, ParserContext *context) {
     slice_push_code(code, &context->bytecode);
 }
 
-uint64_t parser_emit_jump(ParserContext *context) {
-    uint64_t index = slice_push_code(OP_JUMP_IF_FALSE, &context->bytecode);
-    slice_push_code(0xff, &context->bytecode);
-    slice_push_code(0xff, &context->bytecode);
+uint64_t parser_emit_jump(OpCode jump_op, ParserContext *context) {
+    uint64_t index = slice_push_code(jump_op, &context->bytecode);
+    slice_push_code(0x00, &context->bytecode);
+    slice_push_code(0x00, &context->bytecode);
     return index;
 }
 

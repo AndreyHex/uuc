@@ -42,8 +42,12 @@ int assert_value(Value left, Value right) {
         case TYPE_INT: return assert_integer(left.as.uuc_int, right.as.uuc_int);
         case TYPE_DOUBLE: return assert_double(left.as.uuc_double, right.as.uuc_double);
         case TYPE_BOOL: return assert_bool(left.as.uuc_bool, right.as.uuc_bool);
+        case TYPE_NULL: return assert_type(TYPE_NULL, right);
         case TYPE_OBJ: return assert_obj(left.as.uuc_obj, right.as.uuc_obj);
-        default: return 1;
+        default: {
+            printf("Unknown type for assertion\n");
+            return 1;
+        }
     }
     return 0;
 }
