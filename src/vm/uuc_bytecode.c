@@ -22,7 +22,7 @@ Slice slice_init(uint32_t init_capacity) {
     };
 }
 
-void slice_push_code(OpCode code, Slice *slice) {
+uint64_t slice_push_code(OpCode code, Slice *slice) {
     if(slice->size == slice->capacity) {
         size_t new_cap = slice->capacity * 2;
         LOG_TRACE("Growing slice capacity from %d to %ld\n", slice->capacity, new_cap);
@@ -30,6 +30,7 @@ void slice_push_code(OpCode code, Slice *slice) {
     }
     slice->codes[slice->size] = code;
     slice->size++;
+    return slice->size - 1;
 }
 
 uint64_t slice_register_name(Value name, Slice *slice) {
@@ -137,11 +138,14 @@ const char *op_code_names[] = {
     "OP_LT",
     "OP_LTE",
 
+    "OP_JUMP",
+    "OP_JUMP_IF_FALSE",
+
     "OP_RETURN",
     "OP_POP",
 };
 
 const char* opcode_name(OpCode opcode) {
-    if(opcode > 22) return "UNKNOWN OP CODE";
+    if(opcode > 24) return "UNKNOWN OP CODE";
     return op_code_names[opcode];
 }

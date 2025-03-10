@@ -146,6 +146,34 @@ UucResult vm_tick(VM *vm) {
         case OP_LT: execute_operation(uuc_compare_lt) break;
         case OP_LTE: execute_operation(uuc_compare_lte) break;
 
+        case OP_JUMP_IF_FALSE: {
+            Value v = stack_pop(stack);
+            if(uuc_null_check(&v)) return UUC_RUNTIME_ERROR;
+            int r = 0;
+            switch (v.type) {
+                case TYPE_BOOL: r = v.as.uuc_bool; break;
+                case TYPE_INT: r = v.as.uuc_int; break;
+                case TYPE_DOUBLE: r = v.as.uuc_int; break;
+                default: {
+                    LOG_ERROR("Type '%s' cannot be casted to boolean", uuc_type_str(v.type));
+                    return UUC_RUNTIME_ERROR;
+                }
+            }
+            if(r) {
+                // skip jump offset
+                vm_advance(vm);
+                vm_advance(vm);
+            } else {
+                vm_advance(vm);
+                uint8_t left = *vm->ip; // next index 
+                vm_advance(vm);
+                uint8_t right = *vm->ip; // next next index byte
+                uint16_t jump_offset = left | (right << 8);
+                vm->ip += jump_offset;
+            }
+            
+            break;
+        }
         case OP_RETURN: {
             printf("OP_RETURN\n");
             // printf("%f\n", stack_pop(stack));
@@ -155,7 +183,10 @@ UucResult vm_tick(VM *vm) {
             stack_pop(stack);
             break;
         }
-        default: printf("DEFAULT\n");
+        default: {
+            LOG_ERROR("UNKNOWN OP CODE\n");
+            return UUC_RUNTIME_ERROR;
+        }
     }
     return r;
 }

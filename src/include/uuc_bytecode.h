@@ -31,6 +31,9 @@ typedef enum {
     OP_LT,
     OP_LTE,
 
+    OP_JUMP,
+    OP_JUMP_IF_FALSE,
+
     OP_RETURN,
     OP_POP,
 } OpCode;
@@ -44,7 +47,7 @@ typedef struct {
 } Slice;
 
 Slice slice_init(uint32_t initial_capacity);
-void slice_push_code(OpCode code, Slice *slice);
+uint64_t slice_push_code(OpCode code, Slice *slice);
 // just adds constant to store
 uint64_t slice_register_constant(Value value, Slice *slice);
 // adds identifier to name store

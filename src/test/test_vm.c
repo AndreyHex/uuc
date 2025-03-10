@@ -26,7 +26,6 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(-8), "var a = 2-4-6;"));
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2*2*2/2;"));
     add_result(&r, run_vm_test_case(INT_VAL(-8862), "var a = 2*2*2/2-3-4-5-3+4+2+2+5+5*5/6*9*8*8/9-9+6+5*5-8*6-5-4-4/4*5-4-4*4*4-4-5-5*7*4*4*4*4-5-5*4-4-5-4-5;"));
-
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2; a = a+2;"));
 
     add_result(&r, run_vm_test_case(BOOL_TRUE, "var a = 2==2;"));
@@ -63,6 +62,7 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(STRING_OBJ("tt"), "var a = \"t\"+\"t\";"));
     add_result(&r, run_vm_test_case(STRING_OBJ("HelloWorld!!!"), "var a = \"Hello\"+\"World\"+\"!!!\";"));
 
+
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2*true*2/2;"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2/0;"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2/true;"));
@@ -90,7 +90,11 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 
     add_result(&r, run_vm_error_test_case(UUC_COMP_ERROR, "a + b = 23;"));
 
-    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 2; a = a+2;"));
+    // if
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(true) { a = 4; }"));
+    // if -> runtime error
+    add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "var a = 1; if(\"string\") { a = 4; }"));
+    
     return r;
 }
 
@@ -128,10 +132,11 @@ TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
     Slice slice;
     UucResult pr = parse_code(&slice, code);
-    if(expected_res == UUC_COMP_ERROR && pr == UUC_OK) {
+    if(expected_res == UUC_COMP_ERROR && pr != UUC_COMP_ERROR) {
         assert_fail("Expected compile error.");
         return (TestResult){.result = FAIL};
     }
+    if(expected_res == UUC_COMP_ERROR) return (TestResult){.result = PASS};
     VM vm = uuc_vm_init(slice);
     UucResult r = uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)

@@ -14,6 +14,7 @@ void parse_statement(ParserContext *context);
 void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
 uint16_t parse_identifier(ParserContext *context);
+void parse_if(ParserContext *context);
 void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
 void parse_unary(int can_assign, ParserContext *context);
 void parse_binary(int can_assign, ParserContext *context);
@@ -39,6 +40,10 @@ void parser_consume(TokenType token_type, ParserContext *context);
 // returns index in constant list from bytecode slice
 uint64_t parser_emit_constant(Value value, ParserContext *context);
 void parser_emit_opcode(OpCode code, ParserContext *context);
+
+uint64_t parser_emit_jump(ParserContext *context);
+void parser_update_jump(uint64_t index, uint16_t length, ParserContext *context);
+
 // matches token_type with current token in context
 int parser_match(TokenType token_type, ParserContext *context);
 // enters panic mode
@@ -136,23 +141,38 @@ uint16_t parse_identifier(ParserContext *context) {
 void parse_statement(ParserContext *context) {
     Token t = parser_peek(context);
     switch(t.type) {
-        case TOKEN_IF: printf("if\n"); break;
+        case TOKEN_IF: parse_if(context); break;
         case TOKEN_WHILE: printf("while\n"); break;
         case TOKEN_FOR: printf("for\n"); break;
-        case TOKEN_RBRACE: parse_block(context); break;
+        case TOKEN_LBRACE: parse_block(context); break;
         case TOKEN_RETURN: printf("return\n"); break;
         default: parse_expression_statement(context);
     }
 }
 
+void parse_if(ParserContext *context) {
+    parser_consume(TOKEN_IF, context);
+    parser_consume(TOKEN_LPAREN, context);
+    parse_expression(context);
+    parser_consume(TOKEN_RPAREN, context);
+
+    uint64_t index = parser_emit_jump(context);
+    uint32_t p_size = context->bytecode.size;
+    parse_statement(context);
+    
+    uint32_t size = context->bytecode.size;
+    parser_update_jump(index, size - p_size + 1, context);
+}
+
 void parse_block(ParserContext *context) {
     parser_scope_begin(context);
+    parser_consume(TOKEN_LBRACE, context);
     Token t = parser_peek(context);
-    while(t.type != TOKEN_LBRACE && t.type != TOKEN_EOF) {
+    while(t.type != TOKEN_RBRACE && t.type != TOKEN_EOF) {
         parse_declaration(context);
         t = parser_peek(context);
     }
-    parser_consume(TOKEN_LBRACE, context);
+    parser_consume(TOKEN_RBRACE, context);
     parser_scope_end(context);
 }
 
@@ -328,6 +348,19 @@ int parser_match(TokenType token_type, ParserContext *context) {
 
 void parser_emit_opcode(OpCode code, ParserContext *context) {
     slice_push_code(code, &context->bytecode);
+}
+
+uint64_t parser_emit_jump(ParserContext *context) {
+    uint64_t index = slice_push_code(OP_JUMP_IF_FALSE, &context->bytecode);
+    slice_push_code(0xff, &context->bytecode);
+    slice_push_code(0xff, &context->bytecode);
+    return index;
+}
+
+void parser_update_jump(uint64_t index, uint16_t length, ParserContext *context) {
+    LOG_TRACE("Updating jump. Index: %ld length: %d\n", index, length);
+    context->bytecode.codes[index + 1] = length >> 8;
+    context->bytecode.codes[index + 2] = length;
 }
 
 uint64_t parser_emit_constant(Value value, ParserContext *context) {
