@@ -11,6 +11,8 @@ typedef enum {
     OP_DEFINE_GLOBAL, // TOOD: 16 bit version ?
     OP_GET_GLOBAL,
     OP_SET_GLOBAL,
+    OP_GET_LOCAL,
+    OP_SET_LOCAL,
 
     OP_TRUE,
     OP_FALSE,
@@ -32,6 +34,7 @@ typedef enum {
     OP_LTE,
 
     OP_JUMP,
+    OP_JUMP_BACK,
     OP_JUMP_IF_FALSE,
 
     OP_RETURN,

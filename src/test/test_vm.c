@@ -62,7 +62,7 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(STRING_OBJ("test"), "var a = \"test\";"));
     add_result(&r, run_vm_test_case(STRING_OBJ("tt"), "var a = \"t\"+\"t\";"));
     add_result(&r, run_vm_test_case(STRING_OBJ("HelloWorld!!!"), "var a = \"Hello\"+\"World\"+\"!!!\";"));
-
+    add_result(&r, run_vm_test_case(STRING_OBJ("aa"), "var a = \"a\"; a = a + a;"));
 
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2*true*2/2;"));
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "2/0;"));
@@ -121,6 +121,10 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 
     // TODO: == with null
     //add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) {a = 1;} else { if(a == null)a = 4;}"));
+
+    // while
+    add_result(&r, run_vm_test_case(INT_VAL(100), "var a = 0; while(a<100) a = a + 1;"));
+    add_result(&r, run_vm_test_case(STRING_OBJ("55555"), "var a = \"\"; var i = 0; while(i < 5) { i = i + 1;a = a + \"5\";}"));
     
     return r;
 }

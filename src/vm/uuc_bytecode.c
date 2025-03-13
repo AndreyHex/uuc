@@ -118,6 +118,8 @@ const char *op_code_names[] = {
     "OP_DEFINE_GLOBAL",
     "OP_GET_GLOBAL",
     "OP_SET_GLOBAL",
+    "OP_GET_LOCAL",
+    "OP_SET_LOCAL",
 
     "OP_TRUE",
     "OP_FALSE",
@@ -139,6 +141,7 @@ const char *op_code_names[] = {
     "OP_LTE",
 
     "OP_JUMP",
+    "OP_JUMP_BACK",
     "OP_JUMP_IF_FALSE",
 
     "OP_RETURN",
@@ -146,6 +149,6 @@ const char *op_code_names[] = {
 };
 
 const char* opcode_name(OpCode opcode) {
-    if(opcode > 24) return "UNKNOWN OP CODE";
+    if(opcode > 27) return "UNKNOWN OP CODE";
     return op_code_names[opcode];
 }

@@ -46,7 +46,7 @@ UucResult uuc_vm_run(VM *vm) {
     return UUC_OK;
 }
 
-void vm_advance_for(VM *vm, uint32_t offset) {
+void vm_advance_for(VM *vm, int offset) {
     vm->ip += offset;
     vm->ii += offset;
 }
@@ -178,13 +178,15 @@ UucResult vm_tick(VM *vm) {
             }
             break;
         }
+        case OP_JUMP_BACK:
         case OP_JUMP: {
             vm_advance(vm);
             uint8_t left = *vm->ip;
             vm_advance(vm);
             uint8_t right = *vm->ip;
             uint16_t jump_offset = right | (left << 8);
-            vm_advance_for(vm, jump_offset);
+            if(ip == OP_JUMP) vm_advance_for(vm, jump_offset);
+            else if(ip == OP_JUMP_BACK) vm_advance_for(vm, -jump_offset);
             break;
         }
         case OP_RETURN: {
@@ -218,6 +220,11 @@ Value uuc_op_add(Value left, Value right, UucResult *r) {
     if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Cannot add type '%s' to type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
+        printf("values: \n");
+        uuc_val_print(left);
+        printf("\n");
+        uuc_val_print(right);
+        printf("\n");
         *r = UUC_RUNTIME_ERROR;
         return uuc_val_null();
     }
@@ -397,12 +404,13 @@ void uuc_vm_dump(VM *vm) {
         } else if(code == OP_SET_GLOBAL) {
             printf("%3d:%s", code, opcode_name(code));
             i++;
-        } else if(code == OP_JUMP || code == OP_JUMP_IF_FALSE) {
+        } else if(code == OP_JUMP || code == OP_JUMP_BACK || code == OP_JUMP_IF_FALSE) {
             uint8_t left = slice->codes[i + 1];
             uint8_t right = slice->codes[i + 2];
             uint16_t jump_offset = right | (left << 8);
             i += 2;
-            printf("%3d:%s to %d", code, opcode_name(code), i + 1 + jump_offset);
+            int offset = code == OP_JUMP_BACK ? -jump_offset : jump_offset;
+            printf("%3d:%s to %d", code, opcode_name(code), i + offset + 1);
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }

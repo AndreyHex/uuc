@@ -15,6 +15,7 @@ void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
 uint16_t parse_identifier(ParserContext *context);
 void parse_if(ParserContext *context);
+void parse_while(ParserContext *context);
 void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
 void parse_unary(int can_assign, ParserContext *context);
 void parse_binary(int can_assign, ParserContext *context);
@@ -119,8 +120,10 @@ void parse_var_declaration(ParserContext *context) {
     }
     parser_consume(TOKEN_SEMICOLON, context);
 
-    if(context->scope_depth > 0) return;
-    parser_emit_opcode(OP_DEFINE_GLOBAL, context);
+    if(context->scope_depth == 0) 
+        parser_emit_opcode(OP_DEFINE_GLOBAL, context);
+    else 
+        parser_emit_opcode(OP_DEFINE_LOCAL, context);
     parser_emit_opcode(index, context);
 }
 
@@ -138,11 +141,14 @@ uint16_t parse_identifier(ParserContext *context) {
     return slice_register_name(uuc_val_string_obj(s), &context->bytecode);
 }
 
+void parser_emit_variable(ParserContext *context) {
+}
+
 void parse_statement(ParserContext *context) {
     Token t = parser_peek(context);
     switch(t.type) {
         case TOKEN_IF: parse_if(context); break;
-        case TOKEN_WHILE: printf("while\n"); break;
+        case TOKEN_WHILE: parse_while(context); break;
         case TOKEN_FOR: printf("for\n"); break;
         case TOKEN_LBRACE: parse_block(context); break;
         case TOKEN_RETURN: printf("return\n"); break;
@@ -173,6 +179,24 @@ void parse_if(ParserContext *context) {
         uint32_t else_len = context->bytecode.size - start_else; 
         parser_update_jump(else_index, else_len, context);
     }
+}
+
+void parse_while(ParserContext *context) {
+    parser_consume(TOKEN_WHILE, context);
+    parser_consume(TOKEN_LPAREN, context);
+
+    uint32_t start = context->bytecode.size;
+    parse_expression(context);
+    parser_consume(TOKEN_RPAREN, context);
+
+    uint64_t cond_jump = parser_emit_jump(OP_JUMP_IF_FALSE, context);
+    uint32_t start_body = context->bytecode.size;
+
+    parse_statement(context);
+    uint32_t start_jump = parser_emit_jump(OP_JUMP_BACK, context);
+    uint32_t end = context->bytecode.size;
+    parser_update_jump(cond_jump, end - start_body, context);
+    parser_update_jump(start_jump, end - start, context);
 }
 
 void parse_block(ParserContext *context) {
