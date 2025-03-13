@@ -18,7 +18,10 @@ typedef Values ValueList;
 Values collection_copy(Values collection);
 
 ValueStack stack_init(uint32_t initial_capacity);
+
 void stack_push(ValueStack *stack, Value val);
+void stack_set(ValueStack *stack, uint32_t index, Value val);
+Value stack_get(ValueStack *stack, uint32_t index);
 Value stack_pop(ValueStack *stack);
 Value stack_peek(ValueStack *stack);
 void stack_print(Values *stack);

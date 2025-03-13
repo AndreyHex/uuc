@@ -5,15 +5,24 @@
 #include "../include/uuc_precedence.h"
 #include "../include/uuc_string.h"
 #include "../include/uuc_result.h"
+#include <string.h>
 #include <stdint.h>
 #include <stdlib.h>
+
+typedef struct {
+    enum {
+        GLOBAL,
+        LOCAL
+    } scope;
+    uint16_t index;
+} IdentifierIndex;
 
 void parse_declaration(ParserContext *context);
 void parse_var_declaration(ParserContext *context);
 void parse_statement(ParserContext *context);
 void parse_expression_statement(ParserContext *context);
 void parse_expression(ParserContext *context);
-uint16_t parse_identifier(ParserContext *context);
+IdentifierIndex parse_identifier(ParserContext *context, int declaration);
 void parse_if(ParserContext *context);
 void parse_while(ParserContext *context);
 void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
@@ -110,7 +119,7 @@ void parser_synchronize(ParserContext *context) {
 void parse_var_declaration(ParserContext *context) {
     parser_consume(TOKEN_VAR, context);
 
-    uint16_t index = parse_identifier(context);
+    IdentifierIndex index = parse_identifier(context, 1);
 
     if(parser_match(TOKEN_EQUAL, context)) {
         parser_consume(TOKEN_EQUAL, context);
@@ -120,28 +129,34 @@ void parse_var_declaration(ParserContext *context) {
     }
     parser_consume(TOKEN_SEMICOLON, context);
 
-    if(context->scope_depth == 0) 
-        parser_emit_opcode(OP_DEFINE_GLOBAL, context);
-    else 
-        parser_emit_opcode(OP_DEFINE_LOCAL, context);
-    parser_emit_opcode(index, context);
+    if(index.scope == LOCAL) return;
+    parser_emit_opcode(OP_DEFINE_GLOBAL, context);
+    parser_emit_opcode(index.index, context);
 }
 
-uint16_t parse_identifier(ParserContext *context) {
+IdentifierIndex parse_identifier(ParserContext *context, int declaration) {
     Token t = parser_peek(context);
     parser_consume(TOKEN_IDENTIFIER, context);
     if(context->scope_depth > 0) {
-        context->locals[context->local_size++] = (ParserLocal){
-            .name = t,
-            .depth = context->scope_depth,
-        };
-        return 0;
+        if(declaration) {
+            context->locals[context->local_size++] = (ParserLocal){
+                .name = t,
+                .depth = context->scope_depth,
+            };
+            return (IdentifierIndex){ .scope = LOCAL, .index = context->local_size - 1};
+        } else {
+            // lookup for existing local
+            for(int i = 0; i < context->local_size; i++) {
+                Token l = context->locals[i].name;
+                if(t.length == l.length && memcmp(t.start, l.start, t.length) == 0) {
+                    return (IdentifierIndex){ .scope = LOCAL, .index = i};
+                }
+            }
+        }
     }
     UucString *s = uuc_copy_string(t.start, t.length);
-    return slice_register_name(uuc_val_string_obj(s), &context->bytecode);
-}
-
-void parser_emit_variable(ParserContext *context) {
+    uint16_t index = slice_register_name(uuc_val_string_obj(s), &context->bytecode);
+    return (IdentifierIndex){ .scope = GLOBAL, .index = index};
 }
 
 void parse_statement(ParserContext *context) {
@@ -259,16 +274,18 @@ void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context) {
         }
         case TOKEN_LPAREN: parse_grouping(context); break;
         case TOKEN_IDENTIFIER: {
-            uint8_t index = parse_identifier(context);
+            IdentifierIndex index = parse_identifier(context, 0);
             if(parser_peek(context).type == TOKEN_EQUAL && can_assign) {
                 parser_consume(TOKEN_EQUAL, context);
                 parse_precedence(0, 1, context);
-                parser_emit_opcode(OP_SET_GLOBAL, context);
-                parser_emit_opcode(index, context);
+                OpCode code = index.scope == GLOBAL ? OP_SET_GLOBAL : OP_SET_LOCAL;
+                parser_emit_opcode(code, context);
+                parser_emit_opcode(index.index, context);
                 return;
             }
-            parser_emit_opcode(OP_GET_GLOBAL, context);
-            parser_emit_opcode(index, context);
+            OpCode code = index.scope == GLOBAL ? OP_GET_GLOBAL : OP_GET_LOCAL;
+            parser_emit_opcode(code, context);
+            parser_emit_opcode(index.index, context);
             break;
         }
         default: parse_unary(can_assign, context);

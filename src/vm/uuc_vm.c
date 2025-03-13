@@ -121,6 +121,18 @@ UucResult vm_tick(VM *vm) {
             uuc_val_table_put(globals, name, stack_pop(stack));
             break;
         }
+        case OP_GET_LOCAL: {
+            vm_advance(vm);
+            uint8_t index = *vm->ip;
+            stack_push(stack, stack_get(stack, index));
+            break;
+        }
+        case OP_SET_LOCAL: {
+            vm_advance(vm);
+            uint8_t index = *vm->ip;
+            stack_set(stack, index, stack_pop(stack));
+            break;
+        }
         case OP_NOT: {
             Value v = stack_pop(stack);
             if(uuc_null_check(&v)) return UUC_RUNTIME_ERROR;
@@ -402,6 +414,9 @@ void uuc_vm_dump(VM *vm) {
             printf("%3d:%s index:%d", code, opcode_name(code), index);
             i++;
         } else if(code == OP_SET_GLOBAL) {
+            printf("%3d:%s", code, opcode_name(code));
+            i++;
+        } else if(code == OP_SET_LOCAL || code == OP_GET_LOCAL) {
             printf("%3d:%s", code, opcode_name(code));
             i++;
         } else if(code == OP_JUMP || code == OP_JUMP_BACK || code == OP_JUMP_IF_FALSE) {

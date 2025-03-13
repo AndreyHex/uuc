@@ -27,6 +27,22 @@ void stack_push(ValueStack *stack, Value val) {
     stack->size++;
 }
 
+void stack_set(ValueStack *stack, uint32_t index, Value val) {
+    if(index > stack->size) {
+        LOG_ERROR("Stack: index out of bounds for index %d and size %d\n.", index, stack->size);
+        exit(1);
+    }
+    stack->head[index] = val;
+}
+
+Value stack_get(ValueStack *stack, uint32_t index) {
+    if(index > stack->size) {
+        LOG_ERROR("Stack: index out of bounds for index %d and size %d\n.", index, stack->size);
+        exit(1);
+    }
+    return stack->head[index];
+}
+
 Value stack_pop(ValueStack *stack) {
     if(stack->size == 0) {
         LOG_ERROR("Popping empty stack!\n");
