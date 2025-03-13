@@ -401,8 +401,8 @@ void uuc_vm_dump(VM *vm) {
             uint8_t left = slice->codes[i + 1];
             uint8_t right = slice->codes[i + 2];
             uint16_t jump_offset = right | (left << 8);
-            printf("%3d:%s to %d", code, opcode_name(code), i + jump_offset);
             i += 2;
+            printf("%3d:%s to %d", code, opcode_name(code), i + 1 + jump_offset);
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }

@@ -98,6 +98,9 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(2 == 1) { a = 4; }"));
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(true) a = 4;"));
     add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(0) a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a = 1; if(2 + 3 > 4*7) a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "var a = 1; if(a) a = 4;"));
+    add_result(&r, run_vm_test_case(BOOL_FALSE, "var a = false; if(a) a = 4;"));
     // if -> runtime error
     add_result(&r, run_vm_error_test_case(UUC_RUNTIME_ERROR, "var a = 1; if(\"string\") { a = 4; }"));
 
@@ -113,6 +116,8 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) {a = 1;} else { if(2 > 1)a = 4;}"));
     add_result(&r, run_vm_test_case(INT_VAL(2), "var a; if(0) a = 1; else if(true) a = 2; else a = 4;"));
     add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(0) a = 1; else if(false) a = 2; else a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(2), "var a; if(0) a = 1; else if(true) a = 2; else if(true) a = 4;"));
+    add_result(&r, run_vm_test_case(INT_VAL(1), "var a; if(1) a = 1; else if(false) a = 2; else if(false) a = 4;"));
 
     // TODO: == with null
     //add_result(&r, run_vm_test_case(INT_VAL(4), "var a; if(false) {a = 1;} else { if(a == null)a = 4;}"));
@@ -142,6 +147,10 @@ TestResult run_vm_test_case(Value expecting, char *code) {
     int res = uuc_val_table_get(&vm.global_table, a, &r);
     if(res != 1) {
         assert_fail("Global variable 'a' not found.");
+        return (TestResult){ .result = FAIL };
+    }
+    if(vm.value_stack.size > 0) {
+        assert_fail("Expected empty stack after execution.");
         return (TestResult){ .result = FAIL };
     }
     uuc_free_string(a);

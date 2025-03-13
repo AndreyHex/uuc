@@ -198,7 +198,6 @@ void parser_scope_end(ParserContext *context) {
 void parse_expression_statement(ParserContext *context) {
     parse_expression( context);
     parser_consume(TOKEN_SEMICOLON, context);
-    parser_emit_opcode(OP_POP, context);
 }
 
 void parse_expression(ParserContext *context) {
