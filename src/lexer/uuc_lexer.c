@@ -124,12 +124,21 @@ Token next_token(LexerContext *ctx) {
             };
             break;
         }
+        case 'c': {
+            char p = lexer_peek_next(ctx);
+            switch(p) {
+                case 'l': rr = lex_something(ctx, "class", TOKEN_CLASS); break;
+                case 'o': rr = lex_something(ctx, "continue", TOKEN_CONTINUE); break;
+                default: rr = lex_identifier(ctx, 0);
+            };
+            break;
+        }
+        case 'b': rr = lex_something(ctx, "break", TOKEN_BREAK); break;
         case 'i': rr = lex_something(ctx, "if", TOKEN_IF); break;
         case 'e': rr = lex_something(ctx, "else", TOKEN_ELSE); break;
         case 'w': rr = lex_something(ctx, "while", TOKEN_WHILE); break;
         case 'n': rr = lex_something(ctx, "null", TOKEN_NULL); break;
         case 's': rr = lex_something(ctx, "super", TOKEN_SUPER); break;
-        case 'c': rr = lex_something(ctx, "class", TOKEN_CLASS); break;
         case 'r': rr = lex_something(ctx, "return", TOKEN_RETURN); break;
         default: rr = lex_identifier(ctx, 0);
     }

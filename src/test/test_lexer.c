@@ -68,12 +68,13 @@ TestCase test_cases[] = {
     {"2 .23", {TOKEN_INTEGER, TOKEN_DOT, TOKEN_INTEGER}, 3}, // not a valid number
     {"2.", {TOKEN_INTEGER, TOKEN_DOT}, 2},
     // {"2_23", {NUMBER}, 1}, // TODO add support of underscores for numbers ?
-
-
     // comments
     {"fn // comment return 2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 3},
     {"fn // comment // inside another one return 2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 3},
     {"fn // comment\n//\n//\n// //  2 + 2\n 222", {TOKEN_FN, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_SLASH_SLASH, TOKEN_INTEGER}, 6},
+
+    {"while(true)break", {TOKEN_WHILE, TOKEN_LPAREN, TOKEN_TRUE, TOKEN_RPAREN, TOKEN_BREAK}, 5},
+    {"if(true)continue", {TOKEN_IF, TOKEN_LPAREN, TOKEN_TRUE, TOKEN_RPAREN, TOKEN_CONTINUE}, 5},
 };
 
 int amount = sizeof(test_cases) / sizeof(TestCase);

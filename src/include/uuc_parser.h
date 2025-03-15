@@ -12,6 +12,12 @@ typedef struct {
 } ParserLocal;
 
 typedef struct {
+    int depth;
+    uint32_t index;
+    uint32_t pos;
+} ParserJump;
+
+typedef struct {
     LexerContext lexer_context;
     Slice bytecode;
     Token current_token;
@@ -21,6 +27,11 @@ typedef struct {
     ParserLocal locals[225]; // TODO make dynamic?
     uint32_t local_size;
     uint32_t scope_depth;
+    uint32_t loop_depth;
+    ParserJump break_jumps[225];
+    uint32_t break_size;
+    ParserJump continue_jumps[225];
+    uint32_t continue_size;
 } ParserContext;
 
 UucResult parse_code(Slice *slice, char *code);

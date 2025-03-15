@@ -53,6 +53,9 @@ typedef enum {
     TOKEN_THIS,
     TOKEN_SUPER,
 
+    TOKEN_BREAK,
+    TOKEN_CONTINUE,
+
     TOKEN_FOR,
     TOKEN_WHILE,
     TOKEN_IF,

@@ -33,12 +33,11 @@ VM uuc_vm_init(Slice slice) {
 UucResult uuc_vm_run(VM *vm) { 
     while(vm->ii < vm->slice.size) {
 #if defined (UUC_LOG_TRACE)
-    list_print(&vm->slice.constants);
+//    list_print(&vm->slice.constants);
+//    stack_print(&vm->value_stack);
+//    uuc_vm_dump(vm);
 #endif
-#if defined (UUC_LOG_TRACE)
-    stack_print(&vm->value_stack);
-    uuc_vm_dump(vm);
-#endif
+        LOG_TRACE("VM current operation: %ld:%s \n", vm->ii, opcode_name(*vm->ip));
         UucResult r = vm_tick(vm);
         if(r) return r;
         vm_advance(vm);
@@ -417,7 +416,8 @@ void uuc_vm_dump(VM *vm) {
             printf("%3d:%s", code, opcode_name(code));
             i++;
         } else if(code == OP_SET_LOCAL || code == OP_GET_LOCAL) {
-            printf("%3d:%s", code, opcode_name(code));
+            uint8_t index = slice->codes[i + 1];
+            printf("%3d:%s stack_index:%d", code, opcode_name(code), index);
             i++;
         } else if(code == OP_JUMP || code == OP_JUMP_BACK || code == OP_JUMP_IF_FALSE) {
             uint8_t left = slice->codes[i + 1];

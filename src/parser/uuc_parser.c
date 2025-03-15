@@ -26,6 +26,9 @@ IdentifierIndex parse_identifier(ParserContext *context, int declaration);
 void parse_if(ParserContext *context);
 void parse_while(ParserContext *context);
 void parse_for(ParserContext *context);
+void parse_break(ParserContext *context);
+void parse_continue(ParserContext *context);
+void parser_resolve_loop_jumps(uint32_t loop_start, uint32_t loop_end, ParserContext *context);
 void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
 void parse_unary(int can_assign, ParserContext *context);
 void parse_binary(int can_assign, ParserContext *context);
@@ -35,6 +38,8 @@ void parse_bool(Token token, ParserContext *context);
 void parse_grouping(ParserContext *context);
 void parse_block(ParserContext *context);
 
+// returns new local_size 
+uint32_t parser_pop_scopes(uint32_t to, ParserContext *context);
 // begins new scope
 void parser_scope_begin(ParserContext *context);
 // ends scope
@@ -147,7 +152,7 @@ IdentifierIndex parse_identifier(ParserContext *context, int declaration) {
             return (IdentifierIndex){ .scope = LOCAL, .index = context->local_size - 1};
         } else {
             // lookup for existing local
-            for(int i = 0; i < context->local_size; i++) {
+            for(int i = context->local_size - 1; i >= 0; i--) {
                 Token l = context->locals[i].name;
                 if(t.length == l.length && memcmp(t.start, l.start, t.length) == 0) {
                     return (IdentifierIndex){ .scope = LOCAL, .index = i};
@@ -167,6 +172,8 @@ void parse_statement(ParserContext *context) {
         case TOKEN_WHILE: parse_while(context); break;
         case TOKEN_FOR: parse_for(context); break;
         case TOKEN_LBRACE: parse_block(context); break;
+        case TOKEN_BREAK: parse_break(context); break;
+        case TOKEN_CONTINUE: parse_continue(context); break;
         case TOKEN_RETURN: printf("return\n"); break;
         default: parse_expression_statement(context);
     }
@@ -201,6 +208,9 @@ void parse_while(ParserContext *context) {
     parser_consume(TOKEN_WHILE, context);
     parser_consume(TOKEN_LPAREN, context);
 
+    uint32_t loo_depth = context->loop_depth;
+    context->loop_depth = context->scope_depth;
+
     uint32_t start = context->bytecode.size;
     parse_expression(context);
     parser_consume(TOKEN_RPAREN, context);
@@ -213,12 +223,16 @@ void parse_while(ParserContext *context) {
     uint32_t end = context->bytecode.size;
     parser_update_jump(cond_jump, end - start_body, context);
     parser_update_jump(start_jump, end - start, context);
+    context->loop_depth = loo_depth;
+    parser_resolve_loop_jumps(start, end, context);
 }
 
 void parse_for(ParserContext *context) {
     parser_consume(TOKEN_FOR, context);
     parser_consume(TOKEN_LPAREN, context);
 
+    uint32_t loo_depth = context->loop_depth;
+    context->loop_depth = context->scope_depth;
     parser_scope_begin(context);
 
     // decl
@@ -272,6 +286,62 @@ void parse_for(ParserContext *context) {
     parser_update_jump(loop_jump, body_end - before_increment, context);
 
     parser_scope_end(context);
+    context->loop_depth = loo_depth;
+    parser_resolve_loop_jumps(before_increment, body_end, context);
+}
+
+void parser_resolve_loop_jumps(uint32_t loop_start, uint32_t loop_end, ParserContext *context) {
+    uint32_t depth =  context->scope_depth;
+    while(context->continue_size > 0 &&
+          context->continue_jumps[context->continue_size - 1].depth > depth) {
+        ParserJump jump = context->continue_jumps[context->continue_size - 1];
+        parser_update_jump(jump.index, jump.pos - loop_start, context);
+        context->continue_size--;
+    }
+    while(context->break_size > 0 &&
+          context->break_jumps[context->break_size - 1].depth > depth) {
+        ParserJump jump = context->break_jumps[context->break_size - 1];
+        parser_update_jump(jump.index, loop_end - jump.pos, context);
+        context->break_size--;
+    }
+}
+
+void parse_break(ParserContext *context) {
+    if(context->scope_depth == 0) {
+        LOG_ERROR("Cannot '' in global context.");
+        parser_panic(context);
+        return;
+    }
+    parser_consume(TOKEN_BREAK, context);
+    parser_consume(TOKEN_SEMICOLON, context);
+    parser_pop_scopes(context->loop_depth, context);
+    uint32_t index = parser_emit_jump(OP_JUMP, context);
+    uint32_t pos = context->bytecode.size;
+    uint32_t depth = context->scope_depth;
+    context->break_jumps[context->break_size++] = (ParserJump){
+        .index = index,
+        .pos = pos,
+        .depth = depth
+    };
+}
+
+void parse_continue(ParserContext *context) {
+    if(context->scope_depth == 0) {
+        LOG_ERROR("Cannot 'continue' in global context.");
+        parser_panic(context);
+        return;
+    }
+    parser_consume(TOKEN_CONTINUE, context);
+    parser_consume(TOKEN_SEMICOLON, context);
+    parser_pop_scopes(context->loop_depth, context);
+    uint32_t index = parser_emit_jump(OP_JUMP_BACK, context);
+    uint32_t pos = context->bytecode.size;
+    uint32_t depth = context->scope_depth;
+    context->continue_jumps[context->continue_size++] = (ParserJump){
+        .index = index,
+        .pos = pos,
+        .depth = depth
+    };
 }
 
 void parse_block(ParserContext *context) {
@@ -293,11 +363,17 @@ void parser_scope_begin(ParserContext *context) {
 void parser_scope_end(ParserContext *context) {
     context->scope_depth--;
     uint32_t depth = context->scope_depth;
-    while(context->local_size > 0 && 
-          context->locals[context->local_size - 1].depth > depth) {
+    context->local_size = parser_pop_scopes(depth, context);
+}
+
+uint32_t parser_pop_scopes(uint32_t to, ParserContext *context) {
+    uint32_t size = context->local_size;
+    while(size > 0 && 
+          context->locals[size - 1].depth > to) {
         parser_emit_opcode(OP_POP, context);
-        context->local_size--;
+        size--;
     }
+    return size;
 }
 
 void parse_expression_statement(ParserContext *context) {
