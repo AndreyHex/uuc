@@ -126,6 +126,11 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(100), "var a = 0; while(a<100) a = a + 1;"));
     add_result(&r, run_vm_test_case(STRING_OBJ("55555"), "var a = \"\"; var i = 0; while(i < 5) { i = i + 1;a = a + \"5\";}"));
 
+    // for
+    add_result(&r, run_vm_test_case(INT_VAL(10), "var a = 0; for(var i = 0; i < 5; i = i + 1) a = a + 2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(10), "var a = 0; for(;a<10;) a = a + 2;"));
+    add_result(&r, run_vm_test_case(INT_VAL(0), "var a = 0; for(var i = 10;i<10;) a = 2;"));
+
     // local variables
     add_result(&r, run_vm_test_case(INT_VAL(0), "var a = 0; { var a = 10; }"));
     add_result(&r, run_vm_test_case(INT_VAL(0), "var a = 0; { var a = 10; { a = 11;} }"));

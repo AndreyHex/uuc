@@ -25,6 +25,7 @@ void parse_expression(ParserContext *context);
 IdentifierIndex parse_identifier(ParserContext *context, int declaration);
 void parse_if(ParserContext *context);
 void parse_while(ParserContext *context);
+void parse_for(ParserContext *context);
 void parse_precedence(int can_assign, uint8_t min_p, ParserContext *context);
 void parse_unary(int can_assign, ParserContext *context);
 void parse_binary(int can_assign, ParserContext *context);
@@ -164,7 +165,7 @@ void parse_statement(ParserContext *context) {
     switch(t.type) {
         case TOKEN_IF: parse_if(context); break;
         case TOKEN_WHILE: parse_while(context); break;
-        case TOKEN_FOR: printf("for\n"); break;
+        case TOKEN_FOR: parse_for(context); break;
         case TOKEN_LBRACE: parse_block(context); break;
         case TOKEN_RETURN: printf("return\n"); break;
         default: parse_expression_statement(context);
@@ -214,6 +215,65 @@ void parse_while(ParserContext *context) {
     parser_update_jump(start_jump, end - start, context);
 }
 
+void parse_for(ParserContext *context) {
+    parser_consume(TOKEN_FOR, context);
+    parser_consume(TOKEN_LPAREN, context);
+
+    parser_scope_begin(context);
+
+    // decl
+    if(parser_match(TOKEN_SEMICOLON, context)) {
+        parser_consume(TOKEN_SEMICOLON, context);
+    } else if(parser_match(TOKEN_VAR, context)) {
+        parse_var_declaration(context);
+    }
+    else parse_expression_statement(context);
+    uint32_t after_decl = context->bytecode.size;
+
+    // condition
+    int cond_jump = -1;
+    int cond_jump_over_increment = -1;
+    uint32_t after_condition = 0; 
+    if(parser_match(TOKEN_SEMICOLON, context)) {
+        parser_consume(TOKEN_SEMICOLON, context);
+        after_condition = context->bytecode.size;
+    } else {
+        parse_expression(context);
+        parser_consume(TOKEN_SEMICOLON, context);
+        cond_jump = parser_emit_jump(OP_JUMP_IF_FALSE, context);
+        after_condition = context->bytecode.size;
+        cond_jump_over_increment = parser_emit_jump(OP_JUMP, context);
+    }
+
+    // increment
+    int increment_jump = -1;
+    uint32_t before_increment = context->bytecode.size;
+    if(!parser_match(TOKEN_RPAREN, context)) parse_expression(context);
+    if(cond_jump >= 0) {
+        increment_jump = parser_emit_jump(OP_JUMP_BACK, context);
+    }
+    parser_consume(TOKEN_RPAREN, context);
+
+    // body
+    uint32_t body_start = context->bytecode.size;
+    parse_statement(context);
+    uint32_t loop_jump = parser_emit_jump(OP_JUMP_BACK, context);
+    uint32_t body_end = context->bytecode.size;
+
+    if(cond_jump >= 0) {
+        parser_update_jump(cond_jump, body_end - after_condition, context);
+    }
+    if(cond_jump_over_increment >= 0) {
+        parser_update_jump(cond_jump_over_increment, body_start - before_increment, context);
+    }
+    if(increment_jump >= 0) {
+        parser_update_jump(increment_jump, body_start - after_decl, context);
+    }
+    parser_update_jump(loop_jump, body_end - before_increment, context);
+
+    parser_scope_end(context);
+}
+
 void parse_block(ParserContext *context) {
     parser_scope_begin(context);
     parser_consume(TOKEN_LBRACE, context);
@@ -223,15 +283,7 @@ void parse_block(ParserContext *context) {
         t = parser_peek(context);
     }
     parser_consume(TOKEN_RBRACE, context);
-
     parser_scope_end(context);
-
-    uint32_t depth = context->scope_depth;
-    while(context->local_size > 0 && 
-          context->locals[context->local_size - 1].depth > depth) {
-        parser_emit_opcode(OP_POP, context);
-        context->local_size--;
-    }
 }
 
 void parser_scope_begin(ParserContext *context) {
@@ -240,6 +292,12 @@ void parser_scope_begin(ParserContext *context) {
 
 void parser_scope_end(ParserContext *context) {
     context->scope_depth--;
+    uint32_t depth = context->scope_depth;
+    while(context->local_size > 0 && 
+          context->locals[context->local_size - 1].depth > depth) {
+        parser_emit_opcode(OP_POP, context);
+        context->local_size--;
+    }
 }
 
 void parse_expression_statement(ParserContext *context) {
