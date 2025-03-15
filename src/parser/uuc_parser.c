@@ -223,7 +223,15 @@ void parse_block(ParserContext *context) {
         t = parser_peek(context);
     }
     parser_consume(TOKEN_RBRACE, context);
+
     parser_scope_end(context);
+
+    uint32_t depth = context->scope_depth;
+    while(context->local_size > 0 && 
+          context->locals[context->local_size - 1].depth > depth) {
+        parser_emit_opcode(OP_POP, context);
+        context->local_size--;
+    }
 }
 
 void parser_scope_begin(ParserContext *context) {
