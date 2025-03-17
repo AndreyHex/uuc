@@ -1,5 +1,5 @@
-#ifndef uuc_parser_h
-#define uuc_parser_h
+#ifndef uuc_compiler_h
+#define uuc_compiler_h
 
 #include "uuc_lexer.h"
 #include "uuc_bytecode.h"
@@ -9,13 +9,13 @@
 typedef struct {
     Token name;
     int depth;
-} ParserLocal;
+} CompilerLocal;
 
 typedef struct {
     int depth;
     uint32_t index;
     uint32_t pos;
-} ParserJump;
+} CompilerJump;
 
 typedef struct {
     LexerContext lexer_context;
@@ -24,16 +24,17 @@ typedef struct {
     Token previous_token;
     int panic;
     int error;
-    ParserLocal locals[225]; // TODO make dynamic?
+    CompilerLocal locals[225]; // TODO make dynamic?
     uint32_t local_size;
     uint32_t scope_depth;
-    uint32_t loop_depth;
-    ParserJump break_jumps[225];
-    uint32_t break_size;
-    ParserJump continue_jumps[225];
-    uint32_t continue_size;
-} ParserContext;
+    int loop_depth;
 
-UucResult parse_code(Slice *slice, char *code);
+    CompilerJump break_jumps[225];
+    uint32_t break_size;
+    CompilerJump continue_jumps[225];
+    uint32_t continue_size;
+} CompilerContext;
+
+UucResult compile_code(Slice *slice, char *code);
 
 #endif

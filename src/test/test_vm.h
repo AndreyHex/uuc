@@ -1,4 +1,4 @@
-#include "../include/uuc_parser.h"
+#include "../include/uuc_compiler.h"
 #include "../include/uuc_bytecode.h"
 #include "../include/uuc_vm.h"
 #include "../include/uuc_s_notation.h"

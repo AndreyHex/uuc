@@ -176,7 +176,7 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 TestResult run_vm_test_case(Value expecting, char *code) {
     printf("Test running code: '%s'\n", code);
     Slice slice;
-    UucResult pr = parse_code(&slice, code);
+    UucResult pr = compile_code(&slice, code);
     if(pr != UUC_OK) {
         assert_fail("Unexpected parsing result.");
         return (TestResult){.result = FAIL};
@@ -215,7 +215,7 @@ TestResult run_vm_test_case(Value expecting, char *code) {
 TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
     Slice slice;
-    UucResult pr = parse_code(&slice, code);
+    UucResult pr = compile_code(&slice, code);
     if(expected_res == UUC_COMP_ERROR && pr != UUC_COMP_ERROR) {
         assert_fail("Expected compile error.");
         return (TestResult){.result = FAIL};

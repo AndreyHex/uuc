@@ -1,5 +1,5 @@
 #include "test_lexer.h"
-#include "test_parser.h"
+#include "test_compiler.h"
 #include "test_vm.h"
 #include "test_val_table.h"
 #include "uuc_test.h"
@@ -19,13 +19,13 @@ void summarize_tests(TestResults results, int *passed, int *all) {
 
 int main(int argc, const char *argv[]) {
     TestResults lexer_res = run_lexer_test(argc, argv);
-    TestResults parser_res = run_parser_test(argc, argv);
+    TestResults compiler_res = run_compiler_test(argc, argv);
     TestResults vm_res = run_vm_test(argc, argv);
     TestResults table_res = run_val_table_tests(argc, argv);
     
     int passed = 0;
     int all = 0;
-    summarize_tests(parser_res, &passed, &all);
+    summarize_tests(compiler_res, &passed, &all);
     summarize_tests(lexer_res, &passed, &all);
     summarize_tests(vm_res, &passed, &all);
     summarize_tests(table_res, &passed, &all);
