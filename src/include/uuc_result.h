@@ -3,6 +3,7 @@
 
 typedef enum {
     UUC_OK,
+    UUC_OK_END,
     UUC_COMP_ERROR,
     UUC_RUNTIME_ERROR,
 } UucResult;

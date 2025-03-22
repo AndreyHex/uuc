@@ -1,6 +1,7 @@
 #ifndef uuc_compiler_h
 #define uuc_compiler_h
 
+#include "uuc_function.h"
 #include "uuc_lexer.h"
 #include "uuc_bytecode.h"
 #include "uuc_result.h"
@@ -19,7 +20,8 @@ typedef struct {
 
 typedef struct {
     LexerContext lexer_context;
-    Slice bytecode;
+    UucFunction *main;
+    UucFunction *current;
     Token current_token;
     Token previous_token;
     int panic;
@@ -35,6 +37,10 @@ typedef struct {
     uint32_t continue_size;
 } CompilerContext;
 
-UucResult compile_code(Slice *slice, char *code);
+UucResult compile_code(UucFunction *main, char *code);
+
+static inline Slice *uuc_cur_bcode(CompilerContext *context) {
+    return &context->current->bytecode;
+}
 
 #endif

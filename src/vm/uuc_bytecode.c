@@ -22,6 +22,11 @@ Slice slice_init(uint32_t init_capacity) {
     };
 }
 
+void uuc_slice_free(Slice *slice) {
+    list_free(&slice->constants);
+    list_free(&slice->names);
+}
+
 uint64_t slice_push_code(OpCode code, Slice *slice) {
     if(slice->size == slice->capacity) {
         size_t new_cap = slice->capacity * 2;

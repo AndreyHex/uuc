@@ -7,7 +7,9 @@
 #include "uuc_vm_operations.h"
 
 UucResult vm_tick(VM *vm);
-void vm_advance(VM *vm);
+void uuc_vm_advance(UucCallFrame *frame);
+void uuc_vm_advance_for(UucCallFrame *frame, int offset);
+UucCallFrame uuc_create_call_frame(VM *vm, UucFunction *function);
 int uuc_type_check(Value val, UucType type, const char *msg);
 int uuc_null_check(Value *val);
 int uuc_zero_division_check(Value divisor);
@@ -19,40 +21,37 @@ Value uuc_compare_eq(Value left, Value right, UucResult *r);
 
 void uuc_vm_dump(VM *vm);
 
-VM uuc_vm_init(Slice slice) {
+VM uuc_vm_init(UucFunction *main) {
     VM vm = {
-        .slice = slice,
-        .ip = slice.codes,
-        .ii = 0,
+        .main = main,
         .value_stack = stack_init(32),
         .global_table = uuc_init_val_table(16),
+        .frames_size = 0,
     };
+    vm.call_frames[0] = uuc_create_call_frame(&vm, main);
     return vm;
 }
 
 UucResult uuc_vm_run(VM *vm) { 
-    while(vm->ii < vm->slice.size) {
+    UucResult r = UUC_OK;
+    while(r == UUC_OK) {
 #if defined (UUC_LOG_TRACE)
 //    list_print(&vm->slice.constants);
-//    stack_print(&vm->value_stack);
 //    uuc_vm_dump(vm);
 #endif
-        LOG_TRACE("VM current operation: %ld:%s \n", vm->ii, opcode_name(*vm->ip));
-        UucResult r = vm_tick(vm);
-        if(r) return r;
-        vm_advance(vm);
+        r = vm_tick(vm);
     }
-    return UUC_OK;
+    return r;
 }
 
-void vm_advance_for(VM *vm, int offset) {
-    vm->ip += offset;
-    vm->ii += offset;
+void uuc_vm_advance(UucCallFrame *frame) {
+    frame->ip++;
+    frame->ii++;
 }
 
-void vm_advance(VM *vm) {
-    vm->ip++;
-    vm->ii++;
+void uuc_vm_advance_for(UucCallFrame *frame, int offset) {
+    frame->ip += offset;
+    frame->ii += offset;
 }
 
 #define execute_operation(fun_name) \
@@ -64,17 +63,23 @@ if(uuc_null_check(&a)) return UUC_RUNTIME_ERROR; \
 stack_push(stack, fun_name(a, b, &r)); } while(0);
 
 UucResult vm_tick(VM *vm) {
-    uint8_t ip = *vm->ip;
+    UucCallFrame *frame = &vm->call_frames[vm->frames_size - 1];
+    uint32_t stack_offset = frame->stack_offset;
+    uint8_t ip = *frame->ip;
+    LOG_TRACE("VM current operation: %ld:%s \n", frame->ii, opcode_name(ip));
     Values *stack = &vm->value_stack;
-    Values *constants = &vm->slice.constants;
-    Values *names = &vm->slice.names;
+    Values *constants = &frame->function->bytecode.constants;
+    Values *names = &frame->function->bytecode.names;
     UucValTable *globals = &vm->global_table;
+    //stack_print(stack);
+    //list_print(constants);
+    //list_print(names);
 
     UucResult r = UUC_OK;
     switch(ip) {
         case OP_CONSTANT: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
             stack_push(stack, list_get(constants, index));
             break;
         }
@@ -86,8 +91,8 @@ UucResult vm_tick(VM *vm) {
             break;
         }
         case OP_DEFINE_GLOBAL: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
             UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
             Value val = stack_peek(stack);
             uuc_val_table_put(globals, name, val);
@@ -95,8 +100,8 @@ UucResult vm_tick(VM *vm) {
             break;
         }
         case OP_GET_GLOBAL: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
             UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
             Value val;
             int r = uuc_val_table_get(globals, name, &val);
@@ -108,8 +113,8 @@ UucResult vm_tick(VM *vm) {
             break;
         }
         case OP_SET_GLOBAL: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
             UucString *name = (UucString *)list_get(names, index).as.uuc_obj;
             Value val;
             int r = uuc_val_table_get(globals, name, &val);
@@ -121,15 +126,15 @@ UucResult vm_tick(VM *vm) {
             break;
         }
         case OP_GET_LOCAL: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
-            stack_push(stack, stack_get(stack, index));
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
+            stack_push(stack, stack_get(stack, stack_offset + index));
             break;
         }
         case OP_SET_LOCAL: {
-            vm_advance(vm);
-            uint8_t index = *vm->ip;
-            stack_set(stack, index, stack_pop(stack));
+            uuc_vm_advance(frame);
+            uint8_t index = *frame->ip;
+            stack_set(stack, stack_offset + index, stack_pop(stack));
             break;
         }
         case OP_NOT: {
@@ -177,27 +182,27 @@ UucResult vm_tick(VM *vm) {
             }
             if(r) {
                 // skip jump offset
-                vm_advance(vm);
-                vm_advance(vm);
+                uuc_vm_advance(frame);
+                uuc_vm_advance(frame);
             } else {
-                vm_advance(vm);
-                uint8_t left = *vm->ip;
-                vm_advance(vm);
-                uint8_t right = *vm->ip;
+                uuc_vm_advance(frame);
+                uint8_t left = *frame->ip;
+                uuc_vm_advance(frame);
+                uint8_t right = *frame->ip;
                 uint16_t jump_offset = right | (left << 8);
-                vm_advance_for(vm, jump_offset);
+                uuc_vm_advance_for(frame, jump_offset);
             }
             break;
         }
         case OP_JUMP_BACK:
         case OP_JUMP: {
-            vm_advance(vm);
-            uint8_t left = *vm->ip;
-            vm_advance(vm);
-            uint8_t right = *vm->ip;
+            uuc_vm_advance(frame);
+            uint8_t left = *frame->ip;
+            uuc_vm_advance(frame);
+            uint8_t right = *frame->ip;
             uint16_t jump_offset = right | (left << 8);
-            if(ip == OP_JUMP) vm_advance_for(vm, jump_offset);
-            else if(ip == OP_JUMP_BACK) vm_advance_for(vm, -jump_offset);
+            if(ip == OP_JUMP) uuc_vm_advance_for(frame, jump_offset);
+            else if(ip == OP_JUMP_BACK) uuc_vm_advance_for(frame, -jump_offset);
             break;
         }
         case OP_RETURN: {
@@ -214,9 +219,24 @@ UucResult vm_tick(VM *vm) {
             return UUC_RUNTIME_ERROR;
         }
     }
+    uuc_vm_advance(frame);
+    // if ok and in main and last instruction return END
+    if(r == UUC_OK && 
+       vm->frames_size == 1 &&
+       frame->ii >= frame->function->bytecode.size) return UUC_OK_END;
     return r;
 }
 #undef execute_operation
+
+UucCallFrame uuc_create_call_frame(VM *vm, UucFunction *function) {
+    vm->frames_size++;
+    return (UucCallFrame){
+        .function = function,
+        .stack_offset = vm->value_stack.size,
+        .ip = function->bytecode.codes,
+        .ii = 0,
+    };
+}
 
 // plz send help
 Value uuc_op_add(Value left, Value right, UucResult *r) {
@@ -367,21 +387,20 @@ int uuc_type_check(Value val, UucType type, const char *msg) {
 
 void uuc_free_vm(VM *vm) {
     stack_free(&vm->value_stack);
-    list_free(&vm->slice.constants);
+    uuc_free_function(vm->main);
     uuc_val_table_free(&vm->global_table);
 }
 
-// TODO: copy-pasta from slice_print
 void uuc_vm_dump(VM *vm) {
-    Slice *slice = &vm->slice;
-    int ii = vm->ii;
+    Slice *slice = &vm->main->bytecode;
+    int ii = 0;
     printf("====== Bytecode slice dump ======\n");
     printf(" Bytes: %d\n", slice->size);
     printf(" Instructions: %d\n", slice->size - slice->constants.size);
     printf(" Constants:\n  ");
-    list_print(&vm->slice.constants);
+    list_print(&slice->constants);
     printf(" Names:\n  ");
-    list_print(&vm->slice.names);
+    list_print(&slice->names);
     printf("============ Globals ============\n");
     uuc_val_table_dump(&vm->global_table);
     printf("============ Content ============\n");

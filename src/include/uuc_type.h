@@ -7,6 +7,7 @@
 
 typedef enum {
     OBJ_STRING,
+    OBJ_FUNCTION,
 } ObjType;
 
 typedef enum {

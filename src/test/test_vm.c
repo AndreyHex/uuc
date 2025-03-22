@@ -175,21 +175,21 @@ TestResults run_vm_test(int argc, const char *argv[]) {
 
 TestResult run_vm_test_case(Value expecting, char *code) {
     printf("Test running code: '%s'\n", code);
-    Slice slice;
-    UucResult pr = compile_code(&slice, code);
+    UucFunction main;
+    UucResult pr = compile_code(&main, code);
     if(pr != UUC_OK) {
         assert_fail("Unexpected parsing result.");
         return (TestResult){.result = FAIL};
     }
-    VM vm = uuc_vm_init(slice);
+    VM vm = uuc_vm_init(&main);
+#if defined(UUC_LOG_TRACE)
+    uuc_vm_dump(&vm);
+#endif
     UucResult vm_r = uuc_vm_run(&vm);
     if(vm_r == UUC_RUNTIME_ERROR) {
         assert_fail("Unexpected runtime error.");
         return (TestResult){.result = FAIL};
     }
-#if defined(UUC_LOG_TRACE)
-    uuc_vm_dump(&vm);
-#endif
     Value r; 
     UucString *a = uuc_create_string("a");
     int res = uuc_val_table_get(&vm.global_table, a, &r);
@@ -214,14 +214,14 @@ TestResult run_vm_test_case(Value expecting, char *code) {
 
 TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
-    Slice slice;
-    UucResult pr = compile_code(&slice, code);
+    UucFunction main;
+    UucResult pr = compile_code(&main, code);
     if(expected_res == UUC_COMP_ERROR && pr != UUC_COMP_ERROR) {
         assert_fail("Expected compile error.");
         return (TestResult){.result = FAIL};
     }
     if(expected_res == UUC_COMP_ERROR) return (TestResult){.result = PASS};
-    VM vm = uuc_vm_init(slice);
+    VM vm = uuc_vm_init(&main);
     UucResult r = uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
     uuc_vm_dump(&vm);

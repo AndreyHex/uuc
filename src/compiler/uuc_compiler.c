@@ -71,11 +71,13 @@ Token next(CompilerContext *context) {
     return next_token(&context->lexer_context);
 }
 
-UucResult compile_code(Slice *slice, char *code) {
+UucResult compile_code(UucFunction *main, char *code) {
     LexerContext lexer_context = lexer_init_context(code);
+    *main = uuc_create_function("main");
     CompilerContext context = { 
         .lexer_context  = lexer_context,
-        .bytecode = slice_init(32),
+        .main = main,
+        .current = main,
         .current_token = {0},
         .previous_token = {0},
         .panic = 0,
@@ -83,7 +85,6 @@ UucResult compile_code(Slice *slice, char *code) {
         .local_size = 0,
         .scope_depth = 0,
         .loop_depth = -1,
-
         .break_size = 0,
         .continue_size = 0,
     };
@@ -93,7 +94,6 @@ UucResult compile_code(Slice *slice, char *code) {
         compile_declaration(&context);
     }
     if(context.error > 0) return UUC_COMP_ERROR;
-    *slice = context.bytecode;
     return UUC_OK;
 }
 
@@ -171,7 +171,7 @@ IdentifierIndex compile_identifier(CompilerContext *context, int declaration) {
         }
     }
     UucString *s = uuc_copy_string(t.start, t.length);
-    uint16_t index = slice_register_name(uuc_val_string_obj(s), &context->bytecode);
+    uint16_t index = slice_register_name(uuc_val_string_obj(s), &context->current->bytecode);
     return (IdentifierIndex){ .scope = GLOBAL, .index = index};
 }
 
@@ -196,7 +196,7 @@ void compile_if(CompilerContext *context) {
     compiler_consume(TOKEN_RPAREN, context);
 
     uint64_t index = compiler_emit_jump(OP_JUMP_IF_FALSE, context);
-    uint32_t start_if = context->bytecode.size;
+    uint32_t start_if = context->current->bytecode.size;
     compile_statement(context);
     if(context->panic) return;
     
@@ -205,13 +205,13 @@ void compile_if(CompilerContext *context) {
         compiler_consume(TOKEN_ELSE, context);
         else_index = compiler_emit_jump(OP_JUMP, context);
     }
-    uint32_t end_if = context->bytecode.size;
+    uint32_t end_if = context->current->bytecode.size;
     compiler_update_jump(index, end_if - start_if, context);
     if(else_index) {
-        uint32_t start_else = context->bytecode.size;
+        uint32_t start_else = context->current->bytecode.size;
         compile_statement(context);
         if(context->panic) return;
-        uint32_t else_len = context->bytecode.size - start_else; 
+        uint32_t else_len = context->current->bytecode.size - start_else; 
         compiler_update_jump(else_index, else_len, context);
     }
 }
@@ -223,17 +223,17 @@ void compile_while(CompilerContext *context) {
     uint32_t loo_depth = context->loop_depth;
     context->loop_depth = context->scope_depth;
 
-    uint32_t start = context->bytecode.size;
+    uint32_t start = context->current->bytecode.size;
     compile_expression(context);
     compiler_consume(TOKEN_RPAREN, context);
 
     uint64_t cond_jump = compiler_emit_jump(OP_JUMP_IF_FALSE, context);
-    uint32_t start_body = context->bytecode.size;
+    uint32_t start_body = context->current->bytecode.size;
 
     compile_statement(context);
     if(context->panic) return;
     uint32_t start_jump = compiler_emit_jump(OP_JUMP_BACK, context);
-    uint32_t end = context->bytecode.size;
+    uint32_t end = context->current->bytecode.size;
     compiler_update_jump(cond_jump, end - start_body, context);
     compiler_update_jump(start_jump, end - start, context);
     context->loop_depth = loo_depth;
@@ -255,7 +255,7 @@ void compile_for(CompilerContext *context) {
         compile_var_declaration(context);
     }
     else compile_expression_statement(context);
-    uint32_t after_decl = context->bytecode.size;
+    uint32_t after_decl = context->current->bytecode.size;
 
     // condition
     int cond_jump = -1;
@@ -263,18 +263,18 @@ void compile_for(CompilerContext *context) {
     uint32_t after_condition = 0; 
     if(compiler_match(TOKEN_SEMICOLON, context)) {
         compiler_consume(TOKEN_SEMICOLON, context);
-        after_condition = context->bytecode.size;
+        after_condition = uuc_cur_bcode(context)->size;
     } else {
         compile_expression(context);
         compiler_consume(TOKEN_SEMICOLON, context);
         cond_jump = compiler_emit_jump(OP_JUMP_IF_FALSE, context);
-        after_condition = context->bytecode.size;
+        after_condition = uuc_cur_bcode(context)->size;
         cond_jump_over_increment = compiler_emit_jump(OP_JUMP, context);
     }
 
     // increment
     int increment_jump = -1;
-    uint32_t before_increment = context->bytecode.size;
+    uint32_t before_increment = uuc_cur_bcode(context)->size;
     if(!compiler_match(TOKEN_RPAREN, context)) compile_expression(context);
     if(cond_jump >= 0) {
         increment_jump = compiler_emit_jump(OP_JUMP_BACK, context);
@@ -282,11 +282,11 @@ void compile_for(CompilerContext *context) {
     compiler_consume(TOKEN_RPAREN, context);
 
     // body
-    uint32_t body_start = context->bytecode.size;
+    uint32_t body_start = uuc_cur_bcode(context)->size;
     compile_statement(context);
     if(context->panic) return;
     uint32_t loop_jump = compiler_emit_jump(OP_JUMP_BACK, context);
-    uint32_t body_end = context->bytecode.size;
+    uint32_t body_end = uuc_cur_bcode(context)->size;
 
     if(cond_jump >= 0) {
         compiler_update_jump(cond_jump, body_end - after_condition, context);
@@ -330,7 +330,7 @@ void compile_break(CompilerContext *context) {
     compiler_consume(TOKEN_SEMICOLON, context);
     compiler_pop_scopes(context->loop_depth, context);
     uint32_t index = compiler_emit_jump(OP_JUMP, context);
-    uint32_t pos = context->bytecode.size;
+    uint32_t pos = uuc_cur_bcode(context)->size;
     uint32_t depth = context->scope_depth;
     context->break_jumps[context->break_size++] = (CompilerJump){
         .index = index,
@@ -349,7 +349,7 @@ void compile_continue(CompilerContext *context) {
     compiler_consume(TOKEN_SEMICOLON, context);
     compiler_pop_scopes(context->loop_depth, context);
     uint32_t index = compiler_emit_jump(OP_JUMP_BACK, context);
-    uint32_t pos = context->bytecode.size;
+    uint32_t pos = uuc_cur_bcode(context)->size;
     uint32_t depth = context->scope_depth;
     context->continue_jumps[context->continue_size++] = (CompilerJump){
         .index = index,
@@ -556,22 +556,22 @@ int compiler_match(TokenType token_type, CompilerContext *context) {
 }
 
 void compiler_emit_opcode(OpCode code, CompilerContext *context) {
-    slice_push_code(code, &context->bytecode);
+    slice_push_code(code, &context->current->bytecode);
 }
 
 uint64_t compiler_emit_jump(OpCode jump_op, CompilerContext *context) {
-    uint64_t index = slice_push_code(jump_op, &context->bytecode);
-    slice_push_code(0x00, &context->bytecode);
-    slice_push_code(0x00, &context->bytecode);
+    uint64_t index = slice_push_code(jump_op, &context->current->bytecode);
+    slice_push_code(0x00, &context->current->bytecode);
+    slice_push_code(0x00, &context->current->bytecode);
     return index;
 }
 
 void compiler_update_jump(uint64_t index, uint16_t length, CompilerContext *context) {
     LOG_TRACE("Updating jump. Index: %ld length: %d\n", index, length);
-    context->bytecode.codes[index + 1] = length >> 8;
-    context->bytecode.codes[index + 2] = length;
+    uuc_cur_bcode(context)->codes[index + 1] = length >> 8;
+    uuc_cur_bcode(context)->codes[index + 2] = length;
 }
 
 uint64_t compiler_emit_constant(Value value, CompilerContext *context) {
-    return slice_push_constant(value, &context->bytecode);
+    return slice_push_constant(value, &context->current->bytecode);
 }

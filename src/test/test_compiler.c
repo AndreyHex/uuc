@@ -73,14 +73,14 @@ TestResults run_compiler_test(int argc, const char *argv[]) {
 void parser_test_case(TestResults *results, char *expecting, char *code) {
     char buf[300];
     printf("Test parse input expression: '%s'\n", code);
-    Slice slice;
-    UucResult pr = compile_code(&slice, code);
+    UucFunction main;
+    UucResult pr = compile_code(&main, code);
     if(pr != UUC_OK) {
         assert_fail("Unexpected parsing result\n");
         add_result(results, (TestResult){.result = FAIL});
         return;
     }
-    slice_s_notation(&slice, buf, 300);
+    slice_s_notation(&main, buf, 300);
     printf("Result: %s\n", buf);
     int r = assert_str(expecting, buf);
     add_result(results, (TestResult){ .result = r ? FAIL : PASS });
@@ -88,8 +88,8 @@ void parser_test_case(TestResults *results, char *expecting, char *code) {
 
 void parser_test_case_for_comp_error(TestResults *results, char *code) {
     printf("Test compilation error for input: '%s'\n", code);
-    Slice slice;
-    UucResult pr = compile_code(&slice, code);
+    UucFunction main;
+    UucResult pr = compile_code(&main, code);
     if(pr != UUC_COMP_ERROR) {
         assert_fail("Expected compilation error.\n");
         add_result(results, (TestResult){.result = FAIL});

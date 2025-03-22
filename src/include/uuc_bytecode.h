@@ -58,6 +58,8 @@ uint64_t slice_register_name(Value value, Slice *slice);
 // adds constant and OP_CONSTANT opcode
 uint64_t slice_push_constant(Value value, Slice *slice);
 
+void uuc_slice_free(Slice *slice);
+
 void slice_print(Slice *slice);
 const char* opcode_name(OpCode opcode);
 

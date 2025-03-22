@@ -8,7 +8,8 @@ const char *opcode_op_char(OpCode opcode);
 
 // create string epression in s-notation (polish) for testing puproses
 // expecting single expression in slice
-void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
+void slice_s_notation(UucFunction *function, char *buf, uint32_t buf_s) {
+    Slice *slice = &function->bytecode;
     char *bb = malloc(buf_s * sizeof(char));
     int s_cap = 32;
     int s_size = 0;
@@ -68,6 +69,8 @@ void slice_s_notation(Slice *slice, char *buf, uint32_t buf_s) {
             sprintf(bb, "( %s %s )", opcode_op_char(code), a);
             memcpy(&stack[s_size * buf_s], bb, buf_s);
             s_size++;
+        } else {
+            LOG_ERROR("Unknown op_code: '%s'\n", opcode_name(code));
         }
     }
     sprintf(buf, "%s", stack);

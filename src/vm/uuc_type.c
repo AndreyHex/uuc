@@ -10,5 +10,6 @@ const char *uuc_type_strings_[] = {
 };
 
 const char *uuc_type_str(UucType type) {
+    printf("tpye str for %d \n", type);
     return uuc_type_strings_[type];
 }
