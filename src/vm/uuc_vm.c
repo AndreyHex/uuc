@@ -67,11 +67,12 @@ UucResult vm_tick(VM *vm) {
     UucCallFrame *frame = &vm->call_frames[vm->frames_size - 1];
     uint32_t stack_offset = frame->stack_offset;
     uint8_t ip = *frame->ip;
-    LOG_TRACE("VM current operation: %ld:%s \n", frame->ii, opcode_name(ip));
     Values *stack = &vm->value_stack;
     Values *constants = &frame->function->bytecode.constants;
     Values *names = &frame->function->bytecode.names;
     UucValTable *globals = &vm->global_table;
+
+    LOG_TRACE("VM current operation: <%s> %ld:%s \n", frame->function->name->content, frame->ii, opcode_name(ip));
     //stack_print(stack);
     //list_print(constants);
     //list_print(names);
@@ -219,8 +220,8 @@ UucResult vm_tick(VM *vm) {
         }
         case OP_RETURN: {
             Value ret = stack_pop(stack);
-            int arity = frame->function->arity;
-            for(int i = 0; i < arity; i++) {
+            uint32_t locals = stack->size - stack_offset;
+            for(int i = 0; i < locals; i++) {
                 stack_pop(stack);
             }
             vm->frames_size--;

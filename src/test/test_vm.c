@@ -173,6 +173,8 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(69), "fn test() { return 60; } var i = test()+3; var a = i+6;"));
     add_result(&r, run_vm_test_case(INT_VAL(4), "fn multi(x,y) { return x*y; } var i = 2;var a = multi(2,i);"));
     add_result(&r, run_vm_test_case(INT_VAL(69), "var a = 6; var b = 9;fn multi(x,y) { return x*y; } a = multi(a,10); a = a+b;"));
+    add_result(&r, run_vm_test_case(INT_VAL(18), "fn t(b){return b+1;} var a = 2+t(1)*2*(t(1)+t(1));"));
+    add_result(&r, run_vm_test_case(INT_VAL(69), "fn outer(){fn inner(){return 69;}return inner;} var f=outer();var a=f();var b=f();"));
 
     return r;
 }
@@ -190,6 +192,10 @@ TestResult run_vm_test_case(Value expecting, char *code) {
     uuc_vm_dump(&vm);
 #endif
     UucResult vm_r = uuc_vm_run(&vm);
+#if defined(UUC_LOG_TRACE)
+    uuc_vm_dump(&vm);
+    stack_print(&vm.value_stack);
+#endif
     if(vm_r == UUC_RUNTIME_ERROR) {
         assert_fail("Unexpected runtime error.");
         return (TestResult){.result = FAIL};

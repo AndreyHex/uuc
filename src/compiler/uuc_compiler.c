@@ -143,7 +143,6 @@ void compile_function(CompilerContext *context) {
     compiler_emit_opcode(OP_RETURN, context);
 
     context->current = prev;
-    context->local_size--;
     context->scope_depth--;
 
     compiler_emit_constant((Value){.type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)fun }}, context);
