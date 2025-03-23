@@ -1,6 +1,7 @@
 #include "../include/uuc_val_table.h"
 #include "../include/uuc_memory.h"
 #include "../include/uuc_log.h"
+#include "../include/uuc_type_print.h"
 #include <stdint.h>
 #include <stdlib.h>
 #include <string.h>

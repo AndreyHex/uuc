@@ -2,9 +2,9 @@
 #define uuc_value_stack_h
 
 #include "uuc_log.h"
+#include "uuc_type.h"
 #include <stdint.h>
 #include <stdlib.h>
-#include "uuc_type.h"
 
 typedef struct {
     Value *head;

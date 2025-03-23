@@ -1,6 +1,7 @@
 #include "../include/uuc_string.h"
 #include "../include/uuc_bytecode.h"
 #include "../include/uuc_vm.h"
+#include "../include/uuc_type_print.h"
 #include <stdint.h>
 #include <stdio.h>
 
@@ -26,7 +27,7 @@ VM uuc_vm_init(UucFunction *main) {
         .main = main,
         .value_stack = stack_init(32),
         .global_table = uuc_init_val_table(16),
-        .frames_size = 0,
+        .frames_size = 1,
     };
     vm.call_frames[0] = uuc_create_call_frame(&vm, main);
     return vm;
@@ -205,9 +206,26 @@ UucResult vm_tick(VM *vm) {
             else if(ip == OP_JUMP_BACK) uuc_vm_advance_for(frame, -jump_offset);
             break;
         }
+        case OP_CALL: {
+            uuc_vm_advance(frame);
+            uint8_t arity = *frame->ip;
+            Value fn = stack_pop(stack);
+            if(fn.type != TYPE_OBJ || fn.as.uuc_obj->type != OBJ_FUNCTION) {
+                LOG_ERROR("Cannot call non function\n");
+                return UUC_RUNTIME_ERROR;
+            }
+            vm->call_frames[vm->frames_size++] = uuc_create_call_frame(vm, (UucFunction*)fn.as.uuc_obj);
+            break;
+        }
         case OP_RETURN: {
-            printf("OP_RETURN\n");
-            // printf("%f\n", stack_pop(stack));
+            Value ret = stack_pop(stack);
+            int arity = frame->function->arity;
+            printf("return from arity %d\n", arity);
+            for(int i = 0; i < arity; i++) {
+                stack_pop(stack);
+            }
+            vm->frames_size--;
+            stack_push(stack, ret);
             break;
         }
         case OP_POP: {
@@ -229,10 +247,9 @@ UucResult vm_tick(VM *vm) {
 #undef execute_operation
 
 UucCallFrame uuc_create_call_frame(VM *vm, UucFunction *function) {
-    vm->frames_size++;
     return (UucCallFrame){
         .function = function,
-        .stack_offset = vm->value_stack.size,
+        .stack_offset = vm->value_stack.size - function->arity,
         .ip = function->bytecode.codes,
         .ii = 0,
     };
@@ -445,6 +462,10 @@ void uuc_vm_dump(VM *vm) {
             i += 2;
             int offset = code == OP_JUMP_BACK ? -jump_offset : jump_offset;
             printf("%3d:%s to %d", code, opcode_name(code), i + offset + 1);
+        } else if(code == OP_CALL) {
+            uint8_t args = slice->codes[i + 1];
+            printf("%3d:%s args:%d", code, opcode_name(code), args);
+            i++;
         } else {
             printf("%3d:%s", code, opcode_name(code));
         }

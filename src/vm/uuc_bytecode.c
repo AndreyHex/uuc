@@ -1,6 +1,7 @@
 #include "../include/uuc_bytecode.h"
 #include "../include/uuc_log.h"
 #include "../include/uuc_memory.h"
+#include "../include/uuc_type_print.h"
 #include <stdint.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -149,11 +150,12 @@ const char *op_code_names[] = {
     "OP_JUMP_BACK",
     "OP_JUMP_IF_FALSE",
 
+    "OP_CALL",
     "OP_RETURN",
     "OP_POP",
 };
 
 const char* opcode_name(OpCode opcode) {
-    if(opcode > 27) return "UNKNOWN OP CODE";
+    if(opcode > 28) return "UNKNOWN OP CODE";
     return op_code_names[opcode];
 }

@@ -57,21 +57,4 @@ static inline Value uuc_val_string_obj(UucString *str) {
 
 const char *uuc_type_str(UucType type);
 
-static inline void uuc_val_print(Value val) {
-    switch(val.type) {
-        case TYPE_INT: printf("%ld", val.as.uuc_int); break;
-        case TYPE_DOUBLE: printf("%f", val.as.uuc_double); break;
-        case TYPE_BOOL: printf("%s", val.as.uuc_bool ? "true" : "false" ); break;
-        case TYPE_NULL: printf("null"); break;
-        case TYPE_OBJ: {
-            if(val.as.uuc_obj->type == OBJ_STRING) {
-                UucString *str = (UucString*)val.as.uuc_obj;
-                printf("string:'%s'", str->content);
-            } else printf("obj"); 
-            break; 
-        }
-        default: printf("unknown"); break;
-    }
-}
-
 #endif

@@ -2,6 +2,7 @@
 #include "uuc_assert.h"
 #include "uuc_test.h"
 #include "../include/uuc_string.h"
+#include "../include/uuc_type_print.h"
 
 #define INT_VAL(v) (Value){ .type = TYPE_INT, .as = { .uuc_int = v } }
 #define NULL_VAL (Value){ .type = TYPE_NULL, .as = {0} }
@@ -169,19 +170,20 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(0), "var a = 0; { var a = 10; { a = 14; }}"));
     add_result(&r, run_vm_test_case(INT_VAL(14), "var a = 0; { var a = 10;} { var b;a = 14; }"));
 
+    add_result(&r, run_vm_test_case(INT_VAL(69), "fn test() { return 60; } var i = test()+3; var a = i+6;"));
 
     return r;
 }
 
 TestResult run_vm_test_case(Value expecting, char *code) {
     printf("Test running code: '%s'\n", code);
-    UucFunction main;
+    UucFunction *main;
     UucResult pr = compile_code(&main, code);
     if(pr != UUC_OK) {
         assert_fail("Unexpected parsing result.");
         return (TestResult){.result = FAIL};
     }
-    VM vm = uuc_vm_init(&main);
+    VM vm = uuc_vm_init(main);
 #if defined(UUC_LOG_TRACE)
     uuc_vm_dump(&vm);
 #endif
@@ -214,14 +216,14 @@ TestResult run_vm_test_case(Value expecting, char *code) {
 
 TestResult run_vm_error_test_case(UucResult expected_res, char *code) {
     printf("Test execute expression for error: '%s'\n", code);
-    UucFunction main;
+    UucFunction *main;
     UucResult pr = compile_code(&main, code);
     if(expected_res == UUC_COMP_ERROR && pr != UUC_COMP_ERROR) {
         assert_fail("Expected compile error.");
         return (TestResult){.result = FAIL};
     }
     if(expected_res == UUC_COMP_ERROR) return (TestResult){.result = PASS};
-    VM vm = uuc_vm_init(&main);
+    VM vm = uuc_vm_init(main);
     UucResult r = uuc_vm_run(&vm);
 #if defined(UUC_LOG_TRACE)
     uuc_vm_dump(&vm);

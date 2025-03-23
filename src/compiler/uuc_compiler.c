@@ -19,6 +19,7 @@ typedef struct {
 
 void compile_declaration(CompilerContext *context);
 void compile_var_declaration(CompilerContext *context);
+void compile_function(CompilerContext *context);
 void compile_statement(CompilerContext *context);
 void compile_expression_statement(CompilerContext *context);
 void compile_expression(CompilerContext *context);
@@ -30,6 +31,7 @@ void compile_break(CompilerContext *context);
 void compile_continue(CompilerContext *context);
 void compiler_resolve_loop_jumps(uint32_t loop_start, uint32_t loop_end, CompilerContext *context);
 void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context);
+void compile_call(int can_assign, CompilerContext *context);
 void compile_unary(int can_assign, CompilerContext *context);
 void compile_binary(int can_assign, CompilerContext *context);
 void compile_number(Token token, CompilerContext *context);
@@ -71,13 +73,13 @@ Token next(CompilerContext *context) {
     return next_token(&context->lexer_context);
 }
 
-UucResult compile_code(UucFunction *main, char *code) {
+UucResult compile_code(UucFunction **main, char *code) {
     LexerContext lexer_context = lexer_init_context(code);
     *main = uuc_create_function("main");
     CompilerContext context = { 
         .lexer_context  = lexer_context,
-        .main = main,
-        .current = main,
+        .main = *main,
+        .current = *main,
         .current_token = {0},
         .previous_token = {0},
         .panic = 0,
@@ -101,7 +103,7 @@ void compile_declaration(CompilerContext *context) {
     Token t = compiler_peek(context);
     switch(t.type) {
         case TOKEN_VAR: compile_var_declaration(context); break;
-        case TOKEN_FN: 
+        case TOKEN_FN: compile_function(context); break;
         case TOKEN_CLASS: {
             printf("class of fn -- WIP --\n");
             break;
@@ -109,6 +111,35 @@ void compile_declaration(CompilerContext *context) {
         default: compile_statement(context); break;
     }
     if(context->panic) compiler_synchronize(context);
+}
+
+void compile_function(CompilerContext *context) {
+    compiler_consume(TOKEN_FN, context);
+
+    Token t = compiler_peek(context);
+    IdentifierIndex i = compile_identifier(context, 1);
+
+    UucFunction *fun = uuc_create_function_t(t);
+    UucFunction *prev = context->current;
+    context->current = fun;
+
+    compiler_consume(TOKEN_LPAREN, context);
+    // args
+    compiler_consume(TOKEN_RPAREN, context);
+
+    // body
+    compile_block(context);
+
+    compiler_emit_opcode(OP_NULL, context);
+    compiler_emit_opcode(OP_RETURN, context);
+
+    context->current = prev;
+
+    compiler_emit_constant((Value){.type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)fun }}, context);
+    if(i.scope == GLOBAL) {
+        compiler_emit_opcode(OP_DEFINE_GLOBAL, context);
+        compiler_emit_opcode(i.index, context);
+    }
 }
 
 void compiler_synchronize(CompilerContext *context) {
@@ -184,7 +215,13 @@ void compile_statement(CompilerContext *context) {
         case TOKEN_LBRACE: compile_block(context); break;
         case TOKEN_BREAK: compile_break(context); break;
         case TOKEN_CONTINUE: compile_continue(context); break;
-        case TOKEN_RETURN: printf("return\n"); break;
+        case TOKEN_RETURN: {
+            compiler_consume(TOKEN_RETURN, context);
+            compile_expression(context);
+            compiler_consume(TOKEN_SEMICOLON, context);
+            compiler_emit_opcode(OP_RETURN, context);
+            break; 
+        }
         default: compile_expression_statement(context);
     }
 }
@@ -431,7 +468,24 @@ void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context)
         case TOKEN_LPAREN: compile_grouping(context); break;
         case TOKEN_IDENTIFIER: {
             IdentifierIndex index = compile_identifier(context, 0);
-            if(compiler_peek(context).type == TOKEN_EQUAL && can_assign) {
+            Token p = compiler_peek(context);
+            if(p.type == TOKEN_LPAREN) {
+                compiler_consume(TOKEN_LPAREN, context);
+                uint8_t args = 0;
+                while(!compiler_match(TOKEN_RPAREN, context)) {
+                    compile_expression(context);
+                    args++;
+                    if(compiler_match(TOKEN_COMMA, context)) compiler_consume(TOKEN_COMMA, context);
+                    else break;
+                }
+                compiler_consume(TOKEN_RPAREN, context);
+                OpCode code = index.scope == GLOBAL ? OP_GET_GLOBAL : OP_GET_LOCAL;
+                compiler_emit_opcode(code, context);
+                compiler_emit_opcode(index.index, context);
+                compiler_emit_opcode(OP_CALL, context);
+                compiler_emit_opcode(args, context);
+                break;
+            } else if(p.type == TOKEN_EQUAL && can_assign) {
                 compiler_consume(TOKEN_EQUAL, context);
                 compile_precedence(0, 1, context);
                 OpCode code = index.scope == GLOBAL ? OP_SET_GLOBAL : OP_SET_LOCAL;
@@ -459,6 +513,9 @@ void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context)
         compile_binary(can_assign, context);
         op = compiler_peek(context);
     }
+}
+
+void compile_call(int can_assign, CompilerContext *context) {
 }
 
 void compile_unary(int can_assign, CompilerContext *context) {

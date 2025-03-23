@@ -37,7 +37,7 @@ typedef struct {
     uint32_t continue_size;
 } CompilerContext;
 
-UucResult compile_code(UucFunction *main, char *code);
+UucResult compile_code(UucFunction **main, char *code);
 
 static inline Slice *uuc_cur_bcode(CompilerContext *context) {
     return &context->current->bytecode;

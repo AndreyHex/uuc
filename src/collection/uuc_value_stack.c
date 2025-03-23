@@ -1,5 +1,6 @@
 #include "../include/uuc_collection.h"
 #include "../include/uuc_memory.h"
+#include "../include/uuc_type_print.h"
 #include <stdint.h>
 #include <stdlib.h>
 
