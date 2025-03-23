@@ -175,6 +175,7 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(69), "var a = 6; var b = 9;fn multi(x,y) { return x*y; } a = multi(a,10); a = a+b;"));
     add_result(&r, run_vm_test_case(INT_VAL(18), "fn t(b){return b+1;} var a = 2+t(1)*2*(t(1)+t(1));"));
     add_result(&r, run_vm_test_case(INT_VAL(69), "fn outer(){fn inner(){return 69;}return inner;} var f=outer();var a=f();var b=f();"));
+    // add_result(&r, run_vm_test_case(INT_VAL(69), "fn outer(){fn inner(){return 60;}return inner;} var a=outer()()+9;"));
 
     return r;
 }

@@ -24,6 +24,7 @@ void compile_statement(CompilerContext *context);
 void compile_expression_statement(CompilerContext *context);
 void compile_expression(CompilerContext *context);
 IdentifierIndex compile_identifier(CompilerContext *context, int declaration);
+void compile_call(IdentifierIndex index, CompilerContext *context);
 void compile_if(CompilerContext *context);
 void compile_while(CompilerContext *context);
 void compile_for(CompilerContext *context);
@@ -31,7 +32,6 @@ void compile_break(CompilerContext *context);
 void compile_continue(CompilerContext *context);
 void compiler_resolve_loop_jumps(uint32_t loop_start, uint32_t loop_end, CompilerContext *context);
 void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context);
-void compile_call(int can_assign, CompilerContext *context);
 void compile_unary(int can_assign, CompilerContext *context);
 void compile_binary(int can_assign, CompilerContext *context);
 void compile_number(Token token, CompilerContext *context);
@@ -170,6 +170,7 @@ void compiler_synchronize(CompilerContext *context) {
             default:;
         }
         compiler_advance(context);
+        p = compiler_peek(context);
     }
 }
 
@@ -480,20 +481,7 @@ void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context)
             IdentifierIndex index = compile_identifier(context, 0);
             Token p = compiler_peek(context);
             if(p.type == TOKEN_LPAREN) {
-                compiler_consume(TOKEN_LPAREN, context);
-                uint8_t args = 0;
-                while(!compiler_match(TOKEN_RPAREN, context)) {
-                    compile_expression(context);
-                    args++;
-                    if(compiler_match(TOKEN_COMMA, context)) compiler_consume(TOKEN_COMMA, context);
-                    else break;
-                }
-                compiler_consume(TOKEN_RPAREN, context);
-                OpCode code = index.scope == GLOBAL ? OP_GET_GLOBAL : OP_GET_LOCAL;
-                compiler_emit_opcode(code, context);
-                compiler_emit_opcode(index.index, context);
-                compiler_emit_opcode(OP_CALL, context);
-                compiler_emit_opcode(args, context);
+                compile_call(index, context);
                 break;
             } else if(p.type == TOKEN_EQUAL && can_assign) {
                 compiler_consume(TOKEN_EQUAL, context);
@@ -525,7 +513,22 @@ void compile_precedence(int can_assign, uint8_t min_p, CompilerContext *context)
     }
 }
 
-void compile_call(int can_assign, CompilerContext *context) {
+void compile_call(IdentifierIndex index, CompilerContext *context) {
+    compiler_consume(TOKEN_LPAREN, context);
+    uint8_t args = 0;
+    while(!compiler_match(TOKEN_RPAREN, context)) {
+        compile_expression(context);
+        args++;
+        if(compiler_match(TOKEN_COMMA, context)) compiler_consume(TOKEN_COMMA, context);
+        else break;
+    }
+    compiler_consume(TOKEN_RPAREN, context);
+    OpCode code = index.scope == GLOBAL ? OP_GET_GLOBAL : OP_GET_LOCAL;
+    compiler_emit_opcode(code, context);
+    compiler_emit_opcode(index.index, context);
+    compiler_emit_opcode(OP_CALL, context);
+    compiler_emit_opcode(args, context);
+    if(compiler_match(TOKEN_LPAREN, context)) compile_call(index, context);
 }
 
 void compile_unary(int can_assign, CompilerContext *context) {

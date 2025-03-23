@@ -259,8 +259,6 @@ UucCallFrame uuc_create_call_frame(VM *vm, UucFunction *function) {
 Value uuc_op_add(Value left, Value right, UucResult *r) {
     if(left.type == TYPE_OBJ && left.as.uuc_obj->type == OBJ_STRING &&
        right.type == TYPE_OBJ && right.as.uuc_obj->type == OBJ_STRING) {
-        UucString *s = (UucString*)left.as.uuc_obj;
-        printf("left len: %ld content: '%s'\n", s->length, s->content);
         UucString *str = uuc_concate_strings((UucString*)left.as.uuc_obj, 
                                              (UucString*)right.as.uuc_obj);
         return (Value){ .type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)str }};
@@ -268,11 +266,6 @@ Value uuc_op_add(Value left, Value right, UucResult *r) {
     if((left.type != TYPE_INT && left.type != TYPE_DOUBLE) ||
        (right.type != TYPE_INT && right.type != TYPE_DOUBLE)) {
         LOG_ERROR("Cannot add type '%s' to type '%s'.\n", uuc_type_str(right.type), uuc_type_str(left.type));
-        printf("values: \n");
-        uuc_val_print(left);
-        printf("\n");
-        uuc_val_print(right);
-        printf("\n");
         *r = UUC_RUNTIME_ERROR;
         return uuc_val_null();
     }
