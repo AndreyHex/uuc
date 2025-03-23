@@ -123,9 +123,18 @@ void compile_function(CompilerContext *context) {
     UucFunction *prev = context->current;
     context->current = fun;
 
+    compiler_scope_begin(context);
+
     compiler_consume(TOKEN_LPAREN, context);
-    // args
+    uint8_t arity = 0;
+    while(!compiler_match(TOKEN_RPAREN, context)) {
+        compile_identifier(context, 1);
+        arity++;
+        if(compiler_match(TOKEN_COMMA, context)) compiler_consume(TOKEN_COMMA, context);
+        else break;
+    }
     compiler_consume(TOKEN_RPAREN, context);
+    fun->arity = arity;
 
     // body
     compile_block(context);
@@ -134,6 +143,8 @@ void compile_function(CompilerContext *context) {
     compiler_emit_opcode(OP_RETURN, context);
 
     context->current = prev;
+    context->local_size--;
+    context->scope_depth--;
 
     compiler_emit_constant((Value){.type = TYPE_OBJ, .as = { .uuc_obj = (UucObj*)fun }}, context);
     if(i.scope == GLOBAL) {

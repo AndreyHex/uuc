@@ -171,6 +171,8 @@ TestResults run_vm_test(int argc, const char *argv[]) {
     add_result(&r, run_vm_test_case(INT_VAL(14), "var a = 0; { var a = 10;} { var b;a = 14; }"));
 
     add_result(&r, run_vm_test_case(INT_VAL(69), "fn test() { return 60; } var i = test()+3; var a = i+6;"));
+    add_result(&r, run_vm_test_case(INT_VAL(4), "fn multi(x,y) { return x*y; } var i = 2;var a = multi(2,i);"));
+    add_result(&r, run_vm_test_case(INT_VAL(69), "var a = 6; var b = 9;fn multi(x,y) { return x*y; } a = multi(a,10); a = a+b;"));
 
     return r;
 }

@@ -220,7 +220,6 @@ UucResult vm_tick(VM *vm) {
         case OP_RETURN: {
             Value ret = stack_pop(stack);
             int arity = frame->function->arity;
-            printf("return from arity %d\n", arity);
             for(int i = 0; i < arity; i++) {
                 stack_pop(stack);
             }
@@ -408,19 +407,10 @@ void uuc_free_vm(VM *vm) {
     uuc_val_table_free(&vm->global_table);
 }
 
-void uuc_vm_dump(VM *vm) {
-    Slice *slice = &vm->main->bytecode;
+void uuc_vm_dump_bytecode(VM *vm, UucFunction *fn) {
+    printf("Function <%s>:\n", fn->name->content);
+    Slice *slice = &fn->bytecode;
     int ii = 0;
-    printf("====== Bytecode slice dump ======\n");
-    printf(" Bytes: %d\n", slice->size);
-    printf(" Instructions: %d\n", slice->size - slice->constants.size);
-    printf(" Constants:\n  ");
-    list_print(&slice->constants);
-    printf(" Names:\n  ");
-    list_print(&slice->names);
-    printf("============ Globals ============\n");
-    uuc_val_table_dump(&vm->global_table);
-    printf("============ Content ============\n");
     for(int i = 0; i < slice->size; i++) {
         uint8_t code = slice->codes[i];
         if(i == ii) printf("> %4d | ", i);
@@ -471,5 +461,26 @@ void uuc_vm_dump(VM *vm) {
         }
         printf("\n");
     }
+    for(int i = 0; i < slice->constants.size; i++) {
+        Value v = slice->constants.head[i];
+        if(v.type == TYPE_OBJ && v.as.uuc_obj->type == OBJ_FUNCTION) {
+            uuc_vm_dump_bytecode(vm, (UucFunction *)v.as.uuc_obj);
+        }
+    }
+}
+
+void uuc_vm_dump(VM *vm) {
+    Slice *slice = &vm->main->bytecode;
+    printf("====== Bytecode slice dump ======\n");
+    printf(" Bytes: %d\n", slice->size);
+    printf(" Instructions: %d\n", slice->size - slice->constants.size);
+    printf(" Constants:\n  ");
+    list_print(&slice->constants);
+    printf(" Names:\n  ");
+    list_print(&slice->names);
+    printf("============ Globals ============\n");
+    uuc_val_table_dump(&vm->global_table);
+    printf("============ Content ============\n");
+    uuc_vm_dump_bytecode(vm, vm->main);
     printf("=================================\n");
 }
